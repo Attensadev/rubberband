@@ -15,6 +15,7 @@ import com.google.gson.Gson;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.util.List;
+import java.util.Optional;
 
 import static com.google.common.collect.Lists.newArrayList;
 import static org.jooq.lambda.Seq.seq;
@@ -41,19 +42,28 @@ public class IndexAndQuery {
         SearchRequest searchRequest = new SearchRequest(new QueryStringQuery("gender: male", null, "_all"), null, null);
 
         //loop for a bit because ES takes a bit to make saved items searchable, after indexing.
-        waitForResultsToShowUp(client, searchRequest);
+        waitForResultsToShowUp(client, searchRequest, 2);
 
         Page<Cat> result = client.query("animals", searchRequest, new PageRequest(20, 0), Cat.class);
         result.getContents().forEach(System.out::println);
+
+        client.delete("animals", "cat", winston.getId());
+        waitForResultsToShowUp(client, searchRequest, 1);
+        System.out.println("After deletion:");
+        result = client.query("animals", searchRequest, new PageRequest(20, 0), Cat.class);
+        result.getContents().forEach(System.out::println);
+
+        Optional<Cat> savedZipper = client.get("animals", "cat", zipper.getId(), Cat.class);
+        System.out.println("savedZipper = " + savedZipper);
     }
 
-    private static void waitForResultsToShowUp(RubberbandClient client, SearchRequest searchRequest) throws InterruptedException {
+    private static void waitForResultsToShowUp(RubberbandClient client, SearchRequest searchRequest, int expected) throws InterruptedException {
         long count;
         int tries = 0;
         do {
             count = client.count("animals", searchRequest);
             Thread.sleep(200);
-        } while (count < 2 && tries++ < 10);
+        } while (count != expected && tries++ < 10);
         System.out.println("number of results = " + count);
     }
 

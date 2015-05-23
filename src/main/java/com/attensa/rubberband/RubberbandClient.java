@@ -13,10 +13,12 @@ import java.net.URI;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Optional;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static org.jooq.lambda.Seq.seq;
 
+//todo: much better error handling and reporting!
 public class RubberbandClient {
 
     private final HttpTemplate httpTemplate;
@@ -30,12 +32,12 @@ public class RubberbandClient {
         this.elasticSearchUrl = elasticSearchUrl;
     }
 
-    public void createIndex(String indexName, ElasticSearchMappings mappings) {
-        httpTemplate.post(indexUrl(indexName), mappings);
+    public void createIndex(String index, ElasticSearchMappings mappings) {
+        httpTemplate.post(indexUrl(index), mappings);
     }
 
-    public void deleteIndex(String indexName) {
-        httpTemplate.delete(URI.create(indexUrl(indexName)));
+    public void deleteIndex(String index) {
+        httpTemplate.delete(URI.create(indexUrl(index)));
     }
 
     public void save(String index, String type, Map<String, Object> documentsById) {
@@ -51,8 +53,8 @@ public class RubberbandClient {
         httpTemplate.post(URI.create(elasticSearchUrl + "/_bulk"), content.getBytes(UTF_8), "text/plain");
     }
 
-    public void save(String indexName, String type, String id, Object item) {
-        httpTemplate.put(URI.create(indexTypeUrl(indexName, type) + id), gson.toJson(item).getBytes(UTF_8), "application/json");
+    public void save(String index, String type, String id, Object item) {
+        httpTemplate.put(singleItemUri(index, type, id), gson.toJson(item).getBytes(UTF_8), "application/json");
     }
 
     public long count(String index, SearchRequest searchRequest) {
@@ -69,6 +71,19 @@ public class RubberbandClient {
         return new Page<>(makeItems(response), pageRequest, response.getHits().getTotal());
     }
 
+    public void delete(String index, String type, String id) {
+        httpTemplate.delete(singleItemUri(index, type, id));
+    }
+
+    private URI singleItemUri(String index, String type, String id) {
+        return URI.create(indexTypeUrl(index, type) + id);
+    }
+
+    public <T> Optional<T> get(String index, String type, String id, Class<T> documentType) {
+        GetResponse<T> getResponse = httpTemplate.get(singleItemUri(index, type, id), Types.newParameterizedType(GetResponse.class, documentType));
+        return Optional.ofNullable(getResponse.get_source());
+    }
+
     private <T> List<T> makeItems(SearchResponse<T> response) {
         return seq(response.getHits().getHits()).map(Hit::get_source).toList();
     }
@@ -80,12 +95,12 @@ public class RubberbandClient {
         });
     }
 
-    private String indexTypeUrl(String indexName, String type) {
-        return indexUrl(indexName) + type + "/";
+    private String indexTypeUrl(String index, String type) {
+        return indexUrl(index) + type + "/";
     }
 
-    private String indexUrl(String indexName) {
-        return elasticSearchUrl + "/" + indexName + "/";
+    private String indexUrl(String index) {
+        return elasticSearchUrl + "/" + index + "/";
     }
 
 }
