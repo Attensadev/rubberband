@@ -1,26 +1,24 @@
 package com.attensa.rubberband.examples;
 
-import com.attensa.rubberband.misc.ElasticSearchMappings;
+import com.attensa.rubberband.data.ElasticSearchMappings;
 import com.flightstats.http.HttpTemplate;
 import com.flightstats.http.Response;
 import com.attensa.rubberband.RubberbandClient;
-import com.attensa.rubberband.misc.Page;
-import com.attensa.rubberband.misc.PageRequest;
-import com.attensa.rubberband.misc.SearchRequest;
+import com.attensa.rubberband.data.Page;
+import com.attensa.rubberband.data.PageRequest;
+import com.attensa.rubberband.data.SearchRequest;
 import com.attensa.rubberband.query.QueryStringQuery;
-import com.flightstats.util.CollectionUtils;
 import com.flightstats.util.CollectionUtils.HashMapBuilder;
 import com.github.rholder.retry.Attempt;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.gson.Gson;
-import lombok.Value;
 import org.apache.http.impl.client.HttpClientBuilder;
 
 import java.util.*;
 
-import static com.attensa.rubberband.misc.ElasticSearchMappings.*;
+import static com.attensa.rubberband.data.ElasticSearchMappings.*;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.jooq.lambda.Seq.seq;
 

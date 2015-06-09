@@ -1,4 +1,4 @@
-package com.attensa.rubberband.misc;
+package com.attensa.rubberband.data;
 
 import com.attensa.rubberband.query.QueryType;
 import lombok.Value;

@@ -1,7 +1,10 @@
 package com.attensa.rubberband;
 
-import com.attensa.rubberband.misc.*;
-import com.attensa.rubberband.misc.SearchResponse.Hit;
+import com.attensa.rubberband.data.*;
+import com.attensa.rubberband.data.internal.CountResponse;
+import com.attensa.rubberband.data.internal.GetResponse;
+import com.attensa.rubberband.data.internal.SearchResponse;
+import com.attensa.rubberband.data.internal.SearchResponse.Hit;
 import com.flightstats.http.HttpTemplate;
 import com.google.gson.Gson;
 import com.google.inject.util.Types;

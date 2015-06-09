@@ -1,4 +1,4 @@
-package com.attensa.rubberband.misc;
+package com.attensa.rubberband.data.internal;
 
 import lombok.Value;
 
