@@ -1,5 +1,6 @@
 package com.attensa.rubberband.examples;
 
+import com.attensa.rubberband.misc.ElasticSearchMappings;
 import com.flightstats.http.HttpTemplate;
 import com.flightstats.http.Response;
 import com.attensa.rubberband.RubberbandClient;
@@ -7,16 +8,19 @@ import com.attensa.rubberband.misc.Page;
 import com.attensa.rubberband.misc.PageRequest;
 import com.attensa.rubberband.misc.SearchRequest;
 import com.attensa.rubberband.query.QueryStringQuery;
+import com.flightstats.util.CollectionUtils;
+import com.flightstats.util.CollectionUtils.HashMapBuilder;
 import com.github.rholder.retry.Attempt;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.gson.Gson;
+import lombok.Value;
 import org.apache.http.impl.client.HttpClientBuilder;
 
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
+import static com.attensa.rubberband.misc.ElasticSearchMappings.*;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.jooq.lambda.Seq.seq;
 
@@ -27,13 +31,16 @@ public class IndexAndQuery {
         HttpTemplate httpTemplate = new HttpTemplate(HttpClientBuilder.create().build(), gson, retryer);
         RubberbandClient client = new RubberbandClient(httpTemplate, gson, "http://localhost:9200");
 
-        Cat winston = new Cat("1", "Winston", "male", "Turkish Van");
-        Cat templeton = new Cat("2", "Templeton", "male", "American Shorthair");
-        Cat zipper = new Cat("3", "Zipper", "female", "Longhair");
-        Cat brownie = new Cat("4", "Brownie", "female", "Longhair");
+        Cat winston = new Cat("1", "Winston", "male", "Turkish Van", "A very fluffy, friendly cat.");
+        Cat templeton = new Cat("2", "Templeton", "male", "American Shorthair", "The old man of the family. Black, and always hungry.");
+        Cat zipper = new Cat("3", "Zipper", "female", "Longhair", "Skittish mama of Brownie.");
+        Cat brownie = new Cat("4", "Brownie", "female", "Longhair", "Zipper's daughter. The least friendly of the crew. Hates the boys and yowls at them often.");
         List<Cat> cats = newArrayList(templeton, zipper, brownie);
 
         client.deleteIndex("animals");
+
+        client.createIndex("animals", createCatMappings());
+
         //save a single one
         client.save("animals", "cat", winston.getId(), winston);
         //save a few using the bulk API
@@ -55,6 +62,15 @@ public class IndexAndQuery {
 
         Optional<Cat> savedZipper = client.get("animals", "cat", zipper.getId(), Cat.class);
         System.out.println("savedZipper = " + savedZipper);
+    }
+
+    private static ElasticSearchMappings createCatMappings() {
+        Config descriptionOptions = new Config("string", null, true, "english", null);
+        Map<String, Config> properties = new HashMapBuilder<String, Config>()
+                .with("description", descriptionOptions)
+                .build();
+        Map<String, PropertyContainer> typeMapping = Collections.singletonMap("cat", new PropertyContainer(properties));
+        return new ElasticSearchMappings(typeMapping, null);
     }
 
     private static void waitForResultsToShowUp(RubberbandClient client, SearchRequest searchRequest, int expected) throws InterruptedException {

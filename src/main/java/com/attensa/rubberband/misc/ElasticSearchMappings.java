@@ -3,33 +3,41 @@ package com.attensa.rubberband.misc;
 import lombok.AllArgsConstructor;
 import lombok.Value;
 
-public interface ElasticSearchMappings {
+import java.util.Map;
+
+@Value
+public class ElasticSearchMappings {
+    //the key to this map is the type that is being mapped.
+    Map<String, PropertyContainer> mappings;
+    Settings settings;
 
     @Value
     @AllArgsConstructor
-    class PropertyContainer<T> {
-        T properties;
+    public static class PropertyContainer {
+        //the key to this map is the property of the type that is being mapped.
+        Map<String, Config> properties;
         Boolean include_in_all;
         ParentConfig _parent;
 
-        public PropertyContainer(T properties) {
+        public PropertyContainer(Map<String, Config> properties) {
             this(properties, null, null);
         }
     }
 
     @Value
-    class ParentConfig {
+    public static class ParentConfig {
         String type;
     }
 
     @Value
     @AllArgsConstructor
-    class Config {
+    public static class Config {
         String type;
+        //one of the valid formats, eg. "date_optional_time", or "week_date_time", etc.
         String format;
         Boolean include_in_all;
         String analyzer;
-        String index;
+        IndexOption index;
 
         public Config(String type) {
             this(type, null, null, null, null);
@@ -38,5 +46,21 @@ public interface ElasticSearchMappings {
         public Config(String type, boolean include_in_all) {
             this(type, null, include_in_all, null, null);
         }
+
+    }
+
+    public enum IndexOption {no, not_analyzed}
+
+    @Value
+    public static class Settings {
+        Analysis analysis;
+    }
+
+    @Value
+    public static class Analysis {
+        Analyzer analyzer;
+    }
+
+    public interface Analyzer {
     }
 }

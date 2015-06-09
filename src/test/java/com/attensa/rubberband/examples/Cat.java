@@ -8,4 +8,5 @@ public class Cat {
     String name;
     String gender;
     String breed;
+    String description;
 }

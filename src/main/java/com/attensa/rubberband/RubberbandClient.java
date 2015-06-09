@@ -5,11 +5,13 @@ import com.attensa.rubberband.misc.SearchResponse.Hit;
 import com.flightstats.http.HttpTemplate;
 import com.google.gson.Gson;
 import com.google.inject.util.Types;
+import lombok.SneakyThrows;
 
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.lang.reflect.ParameterizedType;
 import java.net.URI;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -51,6 +53,28 @@ public class RubberbandClient {
 
         String content = requestBody.toString();
         httpTemplate.post(URI.create(elasticSearchUrl + "/_bulk"), content.getBytes(UTF_8), "text/plain");
+    }
+
+    public void update(String index, String type, List<DocumentUpdate> updates) {
+        String actionAndMetadataFormat = "{\"update\":{\"_index\":\"" + index + "\", \"_type\":\"" + type + "\", \"_id\": \"%s\"}}%n";
+        StringBuilder requestBody = new StringBuilder();
+        for (DocumentUpdate update : updates) {
+            String bits = seq(update.getFieldUpdates().entrySet()).map(this::formatOne).join(",", "{", "}");
+            requestBody.append(String.format(actionAndMetadataFormat, update.getDocumentId()));
+            requestBody.append("{\"doc\": ").append(bits).append("}\n");
+        }
+
+        String content = requestBody.toString();
+        httpTemplate.post(URI.create(elasticSearchUrl + "/_bulk"), content.getBytes(UTF_8), "text/plain");
+    }
+
+    public void update(String index, String type, DocumentUpdate update) {
+        update(index, type, Collections.singletonList(update));
+    }
+
+    @SneakyThrows
+    private String formatOne(Map.Entry<String, Object> entry) {
+        return String.format("%s:%s", entry.getKey(), gson.toJson(entry.getValue()));
     }
 
     public void save(String index, String type, String id, Object item) {
