@@ -39,12 +39,38 @@ public class ElasticSearchMappings {
         String analyzer;
         IndexOption index;
 
+        Map<String, Config> fields;
+
+        Boolean include_in_parent;
+        Map<String, Config> properties;
+
         public Config(String type) {
-            this(type, null, null, null, null);
+            this(type, null, null, null, null, null, null, null);
         }
 
         public Config(String type, boolean include_in_all) {
-            this(type, null, include_in_all, null, null);
+            this(type, null, include_in_all, null, null, null, null, null);
+        }
+
+        /**
+         * Simple configuration of a non-nested property.
+         */
+        public Config(String type, String format, Boolean include_in_all, String analyzer, IndexOption index, Map<String, Config> fields) {
+            this(type, format, include_in_all, analyzer, index, fields, null, null);
+        }
+
+        /**
+         * A sub-document type of configuration (non-nested).
+         */
+        public Config(Boolean include_in_parent, Map<String, Config> properties) {
+            this(null, null, null, null, null, null, include_in_parent, properties);
+        }
+
+        /**
+         * A nested sub-document type of configuration.
+         */
+        public Config(Map<String, Config> properties) {
+            this("nested", null, null, null, null, null, true, properties);
         }
 
     }

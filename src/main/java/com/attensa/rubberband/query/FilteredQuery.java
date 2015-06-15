@@ -17,6 +17,10 @@ public class FilteredQuery implements QueryType {
         this.filtered = new Filtered(query, new FilterQuery(null, termsFilter));
     }
 
+    public FilteredQuery(QueryType query, QueryType filter, Map<String, List<String>> termsFilter) {
+        this.filtered = new Filtered(query, new FilterQuery(filter, termsFilter));
+    }
+
     @Value
     public static class Filtered {
         QueryType query;

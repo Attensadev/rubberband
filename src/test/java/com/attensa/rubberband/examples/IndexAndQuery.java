@@ -63,7 +63,7 @@ public class IndexAndQuery {
     }
 
     private static ElasticSearchMappings createCatMappings() {
-        Config descriptionOptions = new Config("string", null, true, "english", null);
+        Config descriptionOptions = new Config("string", null, true, "english", null, null);
         Map<String, Config> properties = new HashMapBuilder<String, Config>()
                 .with("description", descriptionOptions)
                 .build();

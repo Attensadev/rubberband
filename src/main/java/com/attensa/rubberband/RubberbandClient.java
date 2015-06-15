@@ -102,6 +102,14 @@ public class RubberbandClient {
         httpTemplate.delete(singleItemUri(index, type, id));
     }
 
+    public void deleteByFieldValue(String index, String type, String fieldName, String value) {
+        httpTemplate.delete(URI.create(String.format("%s?q=%s:%s", itemQueryUrl(index, type), fieldName, value)));
+    }
+
+    private String itemQueryUrl(String index, String type) {
+        return indexTypeUrl(index, type) + "_query";
+    }
+
     private URI singleItemUri(String index, String type, String id) {
         return URI.create(indexTypeUrl(index, type) + id);
     }

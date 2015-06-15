@@ -12,7 +12,7 @@ public class SearchRequest {
     List<String> _source;
 
     /**
-     * Should consist of a field & a direction.  Something that turns into json like { "fieldName": "asc" }
+     * Should consist of a field &amp; a direction.  Something that turns into json like { "fieldName": "asc" }
      */
     public interface ElasticSearchSort {}
 }
