@@ -5,10 +5,15 @@ import com.attensa.rubberband.data.internal.CountResponse;
 import com.attensa.rubberband.data.internal.GetResponse;
 import com.attensa.rubberband.data.internal.SearchResponse;
 import com.attensa.rubberband.data.internal.SearchResponse.Hit;
+import com.flightstats.http.HttpException;
 import com.flightstats.http.HttpTemplate;
+import com.flightstats.http.Response;
 import com.google.gson.Gson;
 import com.google.inject.util.Types;
 import lombok.SneakyThrows;
+import org.apache.http.HttpStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.inject.Inject;
 import javax.inject.Named;
@@ -19,12 +24,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Charsets.UTF_8;
 import static org.jooq.lambda.Seq.seq;
 
-//todo: much better error handling and reporting!
+//todo: currently, fava's HttpTemplate.get does not utilize the retryer. That needs to be fixed. Until then, gets here won't get automatically retried.
 public class RubberbandClient {
+    private static final Logger logger = LoggerFactory.getLogger(RubberbandClient.class);
 
     private final HttpTemplate httpTemplate;
     private final Gson gson;
@@ -42,7 +50,14 @@ public class RubberbandClient {
     }
 
     public void deleteIndex(String index) {
-        httpTemplate.delete(URI.create(indexUrl(index)));
+        Response response = httpTemplate.delete(URI.create(indexUrl(index)));
+        if (response.getCode() == HttpStatus.SC_NOT_FOUND) {
+            logger.info("No index with name \"" + index + "\" found to delete");
+            return;
+        }
+        if (response.getCode() != HttpStatus.SC_OK) {
+            throw new HttpException(new HttpException.Details(response.getCode(), response.getBodyString(UTF_8)));
+        }
     }
 
     public void save(String index, String type, Map<String, Object> documentsById) {
@@ -86,10 +101,15 @@ public class RubberbandClient {
 
     public long count(String index, SearchRequest searchRequest) {
         String searchUrl = indexUrl(index) + "_count";
-        return httpTemplate.post(searchUrl, searchRequest, s -> {
-            CountResponse countResponse = gson.fromJson(s, CountResponse.class);
-            return countResponse.getCount();
+        AtomicLong result = new AtomicLong();
+        httpTemplate.postWithNoResponseCodeValidation(searchUrl, searchRequest, response -> {
+            if (HttpStatus.SC_OK > response.getCode() || response.getCode() > HttpStatus.SC_NO_CONTENT) {
+                throw new HttpException(new HttpException.Details(response.getCode(), response.getBodyString(UTF_8)));
+            }
+            CountResponse countResponse = gson.fromJson(response.getBodyString(UTF_8), CountResponse.class);
+            result.set(countResponse.getCount());
         });
+        return result.get();
     }
 
     public <T> Page<T> query(String index, SearchRequest searchRequest, PageRequest pageRequest, Class<T> documentType) {
@@ -124,10 +144,16 @@ public class RubberbandClient {
     }
 
     private <T> SearchResponse<T> makeSearchRequest(String searchUrl, SearchRequest searchRequest, Class<T> documentType) {
-        return httpTemplate.post(searchUrl, searchRequest, s -> {
-            ParameterizedType type = Types.newParameterizedType(SearchResponse.class, documentType);
-            return gson.fromJson(s, type);
+        ParameterizedType type = Types.newParameterizedType(SearchResponse.class, documentType);
+        AtomicReference<SearchResponse<T>> result = new AtomicReference<>();
+        httpTemplate.postWithNoResponseCodeValidation(searchUrl, searchRequest, response -> {
+            if (HttpStatus.SC_OK > response.getCode() || response.getCode() > HttpStatus.SC_NO_CONTENT) {
+                throw new HttpException(new HttpException.Details(response.getCode(), response.getBodyString(UTF_8)));
+            }
+            SearchResponse<T> searchResponse = gson.fromJson(response.getBodyString(UTF_8), type);
+            result.set(searchResponse);
         });
+        return result.get();
     }
 
     private String indexTypeUrl(String index, String type) {
