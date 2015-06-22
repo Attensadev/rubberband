@@ -100,6 +100,7 @@ public class RubberbandClient {
     }
 
     public long count(String index, SearchRequest searchRequest) {
+        logger.debug("Running count query on index: " + index + " : " + gson.toJson(searchRequest));
         String searchUrl = indexUrl(index) + "_count";
         AtomicLong result = new AtomicLong();
         httpTemplate.postWithNoResponseCodeValidation(searchUrl, searchRequest, response -> {
@@ -113,6 +114,7 @@ public class RubberbandClient {
     }
 
     public <T> Page<T> query(String index, SearchRequest searchRequest, PageRequest pageRequest, Class<T> documentType) {
+        logger.debug("Running search query on index: " + index + " : " + gson.toJson(searchRequest));
         String searchUrl = indexUrl(index) + "_search?from=" + (pageRequest.getPageNumber() * pageRequest.getSize()) + "&size=" + pageRequest.getSize();
         SearchResponse<T> response = makeSearchRequest(searchUrl, searchRequest, documentType);
         return new Page<>(makeItems(response), pageRequest, response.getHits().getTotal());
