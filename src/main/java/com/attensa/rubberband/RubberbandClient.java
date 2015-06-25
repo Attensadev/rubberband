@@ -83,7 +83,8 @@ public class RubberbandClient {
         }
 
         String content = requestBody.toString();
-        httpTemplate.post(URI.create(elasticSearchUrl + "/_bulk"), content.getBytes(UTF_8), "text/plain");
+        Response response = httpTemplate.post(URI.create(elasticSearchUrl + "/_bulk"), content.getBytes(UTF_8), "text/plain");
+        checkResponse(response);
     }
 
     public void update(String index, String type, DocumentUpdate update) {
@@ -96,7 +97,8 @@ public class RubberbandClient {
     }
 
     public void save(String index, String type, String id, Object item) {
-        httpTemplate.put(singleItemUri(index, type, id), gson.toJson(item).getBytes(UTF_8), "application/json");
+        Response response = httpTemplate.put(singleItemUri(index, type, id), gson.toJson(item).getBytes(UTF_8), "application/json");
+        checkResponse(response);
     }
 
     public long count(String index, SearchRequest searchRequest) {
@@ -104,13 +106,17 @@ public class RubberbandClient {
         String searchUrl = indexUrl(index) + "_count";
         AtomicLong result = new AtomicLong();
         httpTemplate.postWithNoResponseCodeValidation(searchUrl, searchRequest, response -> {
-            if (HttpStatus.SC_OK > response.getCode() || response.getCode() > HttpStatus.SC_NO_CONTENT) {
-                throw new HttpException(new HttpException.Details(response.getCode(), response.getBodyString(UTF_8)));
-            }
+            checkResponse(response);
             CountResponse countResponse = gson.fromJson(response.getBodyString(UTF_8), CountResponse.class);
             result.set(countResponse.getCount());
         });
         return result.get();
+    }
+
+    private void checkResponse(Response response) {
+        if (HttpStatus.SC_OK > response.getCode() || response.getCode() > HttpStatus.SC_NO_CONTENT) {
+            throw new HttpException(new HttpException.Details(response.getCode(), response.getBodyString(UTF_8)));
+        }
     }
 
     public <T> Page<T> query(String index, SearchRequest searchRequest, PageRequest pageRequest, Class<T> documentType) {
@@ -149,9 +155,7 @@ public class RubberbandClient {
         ParameterizedType type = Types.newParameterizedType(SearchResponse.class, documentType);
         AtomicReference<SearchResponse<T>> result = new AtomicReference<>();
         httpTemplate.postWithNoResponseCodeValidation(searchUrl, searchRequest, response -> {
-            if (HttpStatus.SC_OK > response.getCode() || response.getCode() > HttpStatus.SC_NO_CONTENT) {
-                throw new HttpException(new HttpException.Details(response.getCode(), response.getBodyString(UTF_8)));
-            }
+            checkResponse(response);
             SearchResponse<T> searchResponse = gson.fromJson(response.getBodyString(UTF_8), type);
             result.set(searchResponse);
         });
