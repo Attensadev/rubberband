@@ -143,7 +143,15 @@ public class RubberbandClient {
     }
 
     public <T> Optional<T> get(String index, String type, String id, Class<T> documentType) {
-        GetResponse<T> getResponse = httpTemplate.get(singleItemUri(index, type, id), Types.newParameterizedType(GetResponse.class, documentType));
+        GetResponse<T> getResponse = null;
+        try {
+            getResponse = httpTemplate.get(singleItemUri(index, type, id), Types.newParameterizedType(GetResponse.class, documentType));
+        } catch (HttpException e) {
+            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+                return Optional.empty();
+            }
+            throw e;
+        }
         return Optional.ofNullable(getResponse.get_source());
     }
 

@@ -22,6 +22,7 @@ import static com.attensa.rubberband.data.ElasticSearchMappings.*;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.jooq.lambda.Seq.seq;
 
+//TODO: it would be great to turn this into an automated integration test.
 public class IndexAndQuery {
     public static void main(String[] args) throws InterruptedException {
         Gson gson = new Gson();
@@ -60,6 +61,9 @@ public class IndexAndQuery {
 
         Optional<Cat> savedZipper = client.get("animals", "cat", zipper.getId(), Cat.class);
         System.out.println("savedZipper = " + savedZipper);
+
+        Optional<Cat> deleted = client.get("animals", "cat", winston.getId(), Cat.class);
+        System.out.println("deleted = " + deleted);
     }
 
     private static ElasticSearchMappings createCatMappings() {
