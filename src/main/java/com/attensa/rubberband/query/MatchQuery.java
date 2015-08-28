@@ -2,6 +2,9 @@ package com.attensa.rubberband.query;
 
 import lombok.Value;
 
+/**
+ * A match query that works on the _all field.
+ */
 @Value
 public class MatchQuery implements QueryType {
     AllMatch match;

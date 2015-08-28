@@ -6,6 +6,9 @@ import java.util.Map;
 
 import static java.util.Collections.singletonMap;
 
+/**
+ * A match query, that works on a specific field.
+ */
 @Value
 public class MatchFieldQuery implements QueryType {
     Map<String, String> match;
