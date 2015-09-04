@@ -18,16 +18,22 @@ public class FunctionScoreQuery implements QueryType {
         String score_mode;
     }
 
-    public interface ScoreFunction {}
+    public interface ScoreFunction {
+    }
 
     @Value
     public static class FilterFunction implements ScoreFunction {
         InnerFilter filter;
         int weight;
+
+        public FilterFunction(QueryType query, int weight) {
+            this.filter = new InnerFilter(query);
+            this.weight = weight;
+        }
     }
 
     @Value
-    public static class InnerFilter {
+    static class InnerFilter {
         QueryType query;
     }
 
@@ -43,11 +49,22 @@ public class FunctionScoreQuery implements QueryType {
     }
 
     @Value
-    public static class Gauss {
+    static class Gauss {
         String origin;
         String offset;
         String scale;
         Float decay;
+    }
+
+    @Value
+    public class FieldValueFactor implements FunctionScoreQuery.ScoreFunction {
+        String field;
+        int factor;
+        FieldValueFactorModifier modifier;
+    }
+
+    public enum FieldValueFactorModifier {
+        none, log, log1p, log2p, ln, ln1p, ln2p, square, sqrt, reciprocal
     }
 
 }
