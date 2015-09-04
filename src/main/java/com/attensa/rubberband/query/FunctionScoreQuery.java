@@ -58,13 +58,22 @@ public class FunctionScoreQuery implements QueryType {
 
     @Value
     public class FieldValueFactor implements FunctionScoreQuery.ScoreFunction {
+        InnerFactor field_value_factor;
+
+        public FieldValueFactor(String field, int factor, FieldValueFactorModifier modifier) {
+            this.field_value_factor = new InnerFactor(field, factor, modifier);
+        }
+    }
+
+    @Value
+    static class InnerFactor {
         String field;
         int factor;
         FieldValueFactorModifier modifier;
     }
 
     public enum FieldValueFactorModifier {
-        none, log, log1p, log2p, ln, ln1p, ln2p, square, sqrt, reciprocal
+        none, log, log1p, log2p, ln, ln1p, ln2p, square, sqrt, reciprocal;
     }
 
 }
