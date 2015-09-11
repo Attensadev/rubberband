@@ -9,6 +9,10 @@ import java.util.Map;
 public class FilteredQuery implements QueryType {
     Filtered filtered;
 
+    public FilteredQuery(QueryType rawFilter) {
+        this.filtered = new Filtered(null, rawFilter);
+    }
+
     public FilteredQuery(QueryType query, QueryType filter) {
         this.filtered = new Filtered(query, new FilterQuery(filter, null));
     }
@@ -17,18 +21,14 @@ public class FilteredQuery implements QueryType {
         this.filtered = new Filtered(query, new FilterQuery(null, termsFilter));
     }
 
-    public FilteredQuery(QueryType query, QueryType filter, Map<String, List<String>> termsFilter) {
-        this.filtered = new Filtered(query, new FilterQuery(filter, termsFilter));
-    }
-
     @Value
     public static class Filtered {
         QueryType query;
-        FilterQuery filter;
+        QueryType filter;
     }
 
     @Value
-    public static class FilterQuery {
+    static class FilterQuery implements QueryType {
         QueryType query;
         Map<String, List<String>> terms;
     }

@@ -57,7 +57,7 @@ public class FunctionScoreQuery implements QueryType {
     }
 
     @Value
-    public class FieldValueFactor implements FunctionScoreQuery.ScoreFunction {
+    public static class FieldValueFactor implements FunctionScoreQuery.ScoreFunction {
         InnerFactor field_value_factor;
 
         public FieldValueFactor(String field, int factor, FieldValueFactorModifier modifier) {

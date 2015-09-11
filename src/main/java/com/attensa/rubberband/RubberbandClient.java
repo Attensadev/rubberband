@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
 import static com.google.common.base.Charsets.UTF_8;
+import static com.google.inject.util.Types.newParameterizedType;
 import static org.jooq.lambda.Seq.seq;
 
 //todo: currently, fava's HttpTemplate.get does not utilize the retryer. That needs to be fixed. Until then, gets here won't get automatically retried.
@@ -120,10 +121,14 @@ public class RubberbandClient {
     }
 
     public <T> Page<T> query(String index, SearchRequest searchRequest, PageRequest pageRequest, Class<T> documentType) {
+        return queryWithScores(index, searchRequest, pageRequest, documentType).map(ScoredItem::getItem);
+    }
+
+    public <T> Page<ScoredItem<T>> queryWithScores(String index, SearchRequest searchRequest, PageRequest pageRequest, Class<T> documentType) {
         logger.debug("Running search query on index: " + index + " : " + gson.toJson(searchRequest));
         String searchUrl = indexUrl(index) + "_search?from=" + (pageRequest.getPageNumber() * pageRequest.getSize()) + "&size=" + pageRequest.getSize();
         SearchResponse<T> response = makeSearchRequest(searchUrl, searchRequest, documentType);
-        return new Page<>(makeItems(response), pageRequest, response.getHits().getTotal());
+        return new Page<>(makeScoredItems(response), pageRequest, response.getHits().getTotal());
     }
 
     public void delete(String index, String type, String id) {
@@ -143,9 +148,9 @@ public class RubberbandClient {
     }
 
     public <T> Optional<T> get(String index, String type, String id, Class<T> documentType) {
-        GetResponse<T> getResponse = null;
+        GetResponse<T> getResponse;
         try {
-            getResponse = httpTemplate.get(singleItemUri(index, type, id), Types.newParameterizedType(GetResponse.class, documentType));
+            getResponse = httpTemplate.get(singleItemUri(index, type, id), newParameterizedType(GetResponse.class, documentType));
         } catch (HttpException e) {
             if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
                 return Optional.empty();
@@ -155,12 +160,14 @@ public class RubberbandClient {
         return Optional.ofNullable(getResponse.get_source());
     }
 
-    private <T> List<T> makeItems(SearchResponse<T> response) {
-        return seq(response.getHits().getHits()).map(Hit::get_source).toList();
+    private <T> List<ScoredItem<T>> makeScoredItems(SearchResponse<T> response) {
+        return seq(response.getHits().getHits())
+                .map(hit -> new ScoredItem<>(hit.get_source(), hit.get_score()))
+                .toList();
     }
 
     private <T> SearchResponse<T> makeSearchRequest(String searchUrl, SearchRequest searchRequest, Class<T> documentType) {
-        ParameterizedType type = Types.newParameterizedType(SearchResponse.class, documentType);
+        ParameterizedType type = newParameterizedType(SearchResponse.class, documentType);
         AtomicReference<SearchResponse<T>> result = new AtomicReference<>();
         httpTemplate.postWithNoResponseCodeValidation(searchUrl, searchRequest, response -> {
             checkResponse(response);
