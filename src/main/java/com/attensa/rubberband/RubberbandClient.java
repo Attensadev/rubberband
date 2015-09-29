@@ -4,12 +4,10 @@ import com.attensa.rubberband.data.*;
 import com.attensa.rubberband.data.internal.CountResponse;
 import com.attensa.rubberband.data.internal.GetResponse;
 import com.attensa.rubberband.data.internal.SearchResponse;
-import com.attensa.rubberband.data.internal.SearchResponse.Hit;
 import com.flightstats.http.HttpException;
 import com.flightstats.http.HttpTemplate;
 import com.flightstats.http.Response;
 import com.google.gson.Gson;
-import com.google.inject.util.Types;
 import lombok.SneakyThrows;
 import org.apache.http.HttpStatus;
 import org.slf4j.Logger;
@@ -183,6 +181,50 @@ public class RubberbandClient {
 
     private String indexUrl(String index) {
         return elasticSearchUrl + "/" + index + "/";
+    }
+
+    /**
+     * Uses the "scan" type, which disables sorting for optimal retrieval of data.
+     * <br>
+     * Returns the the scroll context to be used to initiate the scroll.
+     *
+     * @param documentsPerShard : The number of documents to return, per shard, per request.
+     * @param timeToKeepAlive   : How long to keep the scroll alive.  This should be something like "1m". See ES docs for options.
+     * @return The ScrollContext to use for scrolling through the results.
+     * @see #continueScroll(ScrollContext)
+     */
+    public <T> ScrollContext<T> beginScanAndScroll(String index, String type, SearchRequest searchRequest, int documentsPerShard, String timeToKeepAlive, Class<T> documentType) {
+        String searchUrl = indexTypeUrl(index, type) + "_search/?search_type=scan&scroll=" + timeToKeepAlive;
+        SearchResponse<T> response = makeSearchRequest(searchUrl, searchRequest.withSize(documentsPerShard), documentType);
+        return new ScrollContext<>(response.get_scroll_id(), timeToKeepAlive, documentType, true, response.getTotal());
+    }
+
+    /**
+     * @param documentsPerRequest : The number of documents to return, per request.
+     * @param timeToKeepAlive     : How long to keep the scroll alive.  This should be something like "1m". See ES docs for options.
+     * @return The initial page of results, with the context to use for the next page.
+     * @see #continueScroll(ScrollContext)
+     */
+    public <T> ScrollResult<T> beginScroll(String index, String type, SearchRequest searchRequest, int documentsPerRequest, String timeToKeepAlive, Class<T> documentType) {
+        String searchUrl = indexTypeUrl(index, type) + "_search/?scroll=" + timeToKeepAlive;
+        SearchResponse<T> response = makeSearchRequest(searchUrl, searchRequest.withSize(documentsPerRequest), documentType);
+        List<ScoredItem<T>> scoredResults = makeScoredItems(response);
+        List<T> data = seq(scoredResults).map(ScoredItem::getItem).toList();
+        return new ScrollResult<>(new ScrollContext<>(response.get_scroll_id(), timeToKeepAlive, documentType, true, response.getTotal()), data);
+    }
+
+    /**
+     * Be sure to always pass in the context from the previous ScrollResult that was received.
+     */
+    public <T> ScrollResult<T> continueScroll(ScrollContext<T> context) {
+        String searchUrl = elasticSearchUrl + "/_search/scroll?scroll=" + context.getKeepAliveTime() + "&scroll_id=" + context.getScrollId();
+        SearchResponse<T> response = makeSearchRequest(searchUrl, null, context.getDocumentType());
+        List<ScoredItem<T>> scoredResults = makeScoredItems(response);
+        List<T> data = seq(scoredResults).map(ScoredItem::getItem).toList();
+        ScrollContext<T> updatedContext = context
+                .withScrollId(response.get_scroll_id())
+                .withHasMore(data.size() > 0);
+        return new ScrollResult<>(updatedContext, data);
     }
 
 }

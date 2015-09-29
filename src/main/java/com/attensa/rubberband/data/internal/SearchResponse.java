@@ -8,7 +8,12 @@ import java.util.List;
 @Getter
 @Value
 public class SearchResponse<T> {
+    String _scroll_id;
     Hits<T> hits;
+
+    public long getTotal() {
+        return hits.getTotal();
+    }
 
     @Value
     public static class Hits<T> {
