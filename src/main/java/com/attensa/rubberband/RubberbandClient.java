@@ -112,10 +112,15 @@ public class RubberbandClient {
         return result.get();
     }
 
-    private void checkResponse(Response response) {
+    private int checkResponse(Response response) {
+        if (HttpStatus.SC_BAD_REQUEST == response.getCode()) {
+            logger.warn("400 Bad Request: " + response.getBodyString());
+            return response.getCode();
+        }
         if (HttpStatus.SC_OK > response.getCode() || response.getCode() > HttpStatus.SC_NO_CONTENT) {
             throw new HttpException(new HttpException.Details(response.getCode(), response.getBodyString(UTF_8)));
         }
+        return response.getCode();
     }
 
     public <T> Page<T> query(String index, SearchRequest searchRequest, PageRequest pageRequest, Class<T> documentType) {
@@ -168,10 +173,16 @@ public class RubberbandClient {
         ParameterizedType type = newParameterizedType(SearchResponse.class, documentType);
         AtomicReference<SearchResponse<T>> result = new AtomicReference<>();
         httpTemplate.postWithNoResponseCodeValidation(searchUrl, searchRequest, response -> {
-            checkResponse(response);
+            int status = checkResponse(response);
+            if (status == HttpStatus.SC_BAD_REQUEST) {
+                return;
+            }
             SearchResponse<T> searchResponse = gson.fromJson(response.getBodyString(UTF_8), type);
             result.set(searchResponse);
         });
+        if (result.get() == null) {
+            throw new RuntimeException("Search request failed. Details should be in the logs.");
+        }
         return result.get();
     }
 
