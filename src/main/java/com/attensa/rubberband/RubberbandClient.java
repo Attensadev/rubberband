@@ -83,7 +83,7 @@ public class RubberbandClient {
 
         String content = requestBody.toString();
         Response response = httpTemplate.post(URI.create(elasticSearchUrl + "/_bulk"), content.getBytes(UTF_8), "text/plain");
-        checkResponse(response);
+        checkResponseAggressive(response);
     }
 
     public void update(String index, String type, DocumentUpdate update) {
@@ -97,18 +97,30 @@ public class RubberbandClient {
 
     public void save(String index, String type, String id, Object item) {
         Response response = httpTemplate.put(singleItemUri(index, type, id), gson.toJson(item).getBytes(UTF_8), "application/json");
-        checkResponse(response);
+        checkResponseAggressive(response);
+    }
+
+    private void checkResponseAggressive(Response response) {
+        if (HttpStatus.SC_OK > response.getCode() || response.getCode() > HttpStatus.SC_NO_CONTENT) {
+            throw new HttpException(new HttpException.Details(response.getCode(), response.getBodyString(UTF_8)));
+        }
     }
 
     public long count(String index, SearchRequest searchRequest) {
         logger.debug("Running count query on index: " + index + " : " + gson.toJson(searchRequest));
         String searchUrl = indexUrl(index) + "_count";
-        AtomicLong result = new AtomicLong();
+        AtomicLong result = new AtomicLong(-1L);
         httpTemplate.postWithNoResponseCodeValidation(searchUrl, searchRequest, response -> {
-            checkResponse(response);
+            int status = checkResponse(response);
+            if (status == HttpStatus.SC_BAD_REQUEST) {
+                return;
+            }
             CountResponse countResponse = gson.fromJson(response.getBodyString(UTF_8), CountResponse.class);
             result.set(countResponse.getCount());
         });
+        if (result.get() == -1L) {
+            throw new RuntimeException("Count request failed. Details should be in the logs.");
+        }
         return result.get();
     }
 
@@ -117,9 +129,7 @@ public class RubberbandClient {
             logger.warn("400 Bad Request: " + response.getBodyString());
             return response.getCode();
         }
-        if (HttpStatus.SC_OK > response.getCode() || response.getCode() > HttpStatus.SC_NO_CONTENT) {
-            throw new HttpException(new HttpException.Details(response.getCode(), response.getBodyString(UTF_8)));
-        }
+        checkResponseAggressive(response);
         return response.getCode();
     }
 
