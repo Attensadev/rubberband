@@ -1,0 +1,11 @@
+machine:
+    java:
+        version: oraclejdk8
+
+dependencies:
+    override:
+        # note: this is here because if we don't put something here, circle tries to have maven resolve dependencies, and it fails on the internal dependencies. wat?
+        - mvn clean
+test:
+    override:
+        - mvn clean package
