@@ -1,4 +1,4 @@
-package com.attensa.rubberband.examples;
+package com.attensa.rubberband;
 
 import com.attensa.rubberband.RubberbandClient;
 import com.flightstats.http.HttpTemplate;

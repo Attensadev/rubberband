@@ -1,5 +1,6 @@
 package com.attensa.rubberband.examples;
 
+import com.attensa.rubberband.Cat;
 import com.attensa.rubberband.RubberbandClient;
 import com.attensa.rubberband.data.ScrollContext;
 import com.attensa.rubberband.data.ScrollResult;
@@ -12,11 +13,8 @@ import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import lombok.Value;
 import org.apache.http.impl.client.HttpClientBuilder;
 
-import java.util.Date;
 import java.util.List;
 
 public class ScanAndScrollExample {

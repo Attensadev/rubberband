@@ -1,7 +1,9 @@
-package com.attensa.rubberband.examples;
+package com.attensa.rubberband.tests;
 
 import com.attensa.rubberband.RubberbandClient;
 import com.attensa.rubberband.data.DocumentUpdate;
+import com.attensa.rubberband.Cat;
+import com.attensa.rubberband.TestUtilities;
 import org.junit.Before;
 import org.junit.Test;
 

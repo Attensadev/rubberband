@@ -1,5 +1,6 @@
 package com.attensa.rubberband.examples;
 
+import com.attensa.rubberband.Cat;
 import com.attensa.rubberband.RubberbandClient;
 import com.attensa.rubberband.data.ScrollContext;
 import com.attensa.rubberband.data.ScrollResult;

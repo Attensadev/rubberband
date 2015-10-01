@@ -1,6 +1,8 @@
-package com.attensa.rubberband.examples;
+package com.attensa.rubberband.tests;
 
 import com.attensa.rubberband.RubberbandClient;
+import com.attensa.rubberband.Cat;
+import com.attensa.rubberband.TestUtilities;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -28,6 +30,6 @@ public class CreateTest {
 
         Optional<Cat> retrieved = client.get("animals", "cat", id, Cat.class);
         assertTrue(retrieved.isPresent());
-        assertEquals("Main Coon", retrieved.get().getBreed());
+        assertEquals("Maine Coon", retrieved.get().getBreed());
     }
 }

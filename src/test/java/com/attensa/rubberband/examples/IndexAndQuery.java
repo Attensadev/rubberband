@@ -1,5 +1,6 @@
 package com.attensa.rubberband.examples;
 
+import com.attensa.rubberband.Cat;
 import com.attensa.rubberband.data.ElasticSearchMappings;
 import com.flightstats.http.HttpTemplate;
 import com.flightstats.http.Response;
