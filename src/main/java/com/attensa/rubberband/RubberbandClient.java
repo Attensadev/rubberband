@@ -73,6 +73,19 @@ public class RubberbandClient {
         httpTemplate.post(URI.create(elasticSearchUrl + "/_bulk"), content.getBytes(UTF_8), "text/plain");
     }
 
+    public void create(String index, String type, List<Object> documents) {
+        String actionAndMetadataFormat = "{\"create\":{\"_index\":\"" + index + "\", \"_type\":\"" + type + "\"}}\n";
+
+        StringBuilder requestBody = new StringBuilder();
+        for (Object document : documents) {
+            requestBody.append(actionAndMetadataFormat);
+            requestBody.append(gson.toJson(document)).append("\n");
+        }
+
+        String content = requestBody.toString();
+        httpTemplate.post(URI.create(elasticSearchUrl + "/_bulk"), content.getBytes(UTF_8), "text/plain");
+    }
+
     public void update(String index, String type, List<DocumentUpdate> updates) {
         String actionAndMetadataFormat = "{\"update\":{\"_index\":\"" + index + "\", \"_type\":\"" + type + "\", \"_id\": \"%s\"}}%n";
         StringBuilder requestBody = new StringBuilder();
@@ -87,6 +100,21 @@ public class RubberbandClient {
         checkResponseAggressive(response);
     }
 
+    public void save(String index, String type, String id, Object item) {
+        Response response = httpTemplate.put(singleItemUri(index, type, id), gson.toJson(item).getBytes(UTF_8), "application/json");
+        checkResponseAggressive(response);
+    }
+
+    /**
+     * @return The elasticsearch _id of the newly created document.
+     */
+    public String create(String index, String type, Object item) {
+        Response response = httpTemplate.post(URI.create(indexTypeUrl(index, type)), gson.toJson(item).getBytes(UTF_8), "application/json");
+        checkResponseAggressive(response);
+        CreateResponse createResponse = gson.fromJson(response.getBodyString(), CreateResponse.class);
+        return createResponse.get_id();
+    }
+
     public void update(String index, String type, DocumentUpdate update) {
         update(index, type, Collections.singletonList(update));
     }
@@ -94,18 +122,6 @@ public class RubberbandClient {
     @SneakyThrows
     private String formatOne(Map.Entry<String, Object> entry) {
         return String.format("%s:%s", entry.getKey(), gson.toJson(entry.getValue()));
-    }
-
-    public void save(String index, String type, String id, Object item) {
-        Response response = httpTemplate.put(singleItemUri(index, type, id), gson.toJson(item).getBytes(UTF_8), "application/json");
-        checkResponseAggressive(response);
-    }
-
-    public String create(String index, String type, Object item) {
-        Response response = httpTemplate.post(URI.create(indexTypeUrl(index, type)), gson.toJson(item).getBytes(UTF_8), "application/json");
-        checkResponseAggressive(response);
-        CreateResponse createResponse = gson.fromJson(response.getBodyString(), CreateResponse.class);
-        return createResponse.get_id();
     }
 
     private void checkResponseAggressive(Response response) {
