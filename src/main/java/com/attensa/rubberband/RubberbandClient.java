@@ -2,6 +2,7 @@ package com.attensa.rubberband;
 
 import com.attensa.rubberband.data.*;
 import com.attensa.rubberband.data.internal.CountResponse;
+import com.attensa.rubberband.data.internal.CreateResponse;
 import com.attensa.rubberband.data.internal.GetResponse;
 import com.attensa.rubberband.data.internal.SearchResponse;
 import com.flightstats.http.HttpException;
@@ -98,6 +99,13 @@ public class RubberbandClient {
     public void save(String index, String type, String id, Object item) {
         Response response = httpTemplate.put(singleItemUri(index, type, id), gson.toJson(item).getBytes(UTF_8), "application/json");
         checkResponseAggressive(response);
+    }
+
+    public String create(String index, String type, Object item) {
+        Response response = httpTemplate.post(URI.create(indexTypeUrl(index, type)), gson.toJson(item).getBytes(UTF_8), "application/json");
+        checkResponseAggressive(response);
+        CreateResponse createResponse = gson.fromJson(response.getBodyString(), CreateResponse.class);
+        return createResponse.get_id();
     }
 
     private void checkResponseAggressive(Response response) {
