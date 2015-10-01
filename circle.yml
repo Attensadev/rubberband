@@ -1,11 +1,14 @@
 machine:
-    java:
-        version: oraclejdk8
+  java:
+    version: oraclejdk8
+
 
 dependencies:
-    override:
-        # note: this is here because if we don't put something here, circle tries to have maven resolve dependencies, and it fails on the internal dependencies. wat?
-        - mvn clean
+  post:
+    - wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.2.tar.gz
+    - tar -xvf elasticsearch-1.7.2.tar.gz
+    - elasticsearch-1.7.2/bin/elasticsearch: {background: true}
+
 test:
-    override:
-        - mvn clean package
+  override:
+    - mvn clean package
