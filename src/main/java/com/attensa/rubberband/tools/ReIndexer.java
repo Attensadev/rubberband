@@ -28,7 +28,7 @@ public class ReIndexer {
      *
      * @param sourceIndex       - The index from which to fetch documents.
      * @param type              - The type of document to re-index.
-     * @param targetIndex       - The index (possibly on another cluster, based on the source & target clients) to re-index into.
+     * @param targetIndex       - The index (possibly on another cluster, based on the source and target clients) to re-index into.
      * @param documentsPerShard - The number of items to re-index per batch, per cluster shard.
      * @param idField           - the document field containing the unique id of the document.
      */

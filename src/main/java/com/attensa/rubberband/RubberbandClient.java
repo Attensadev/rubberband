@@ -236,6 +236,7 @@ public class RubberbandClient {
      * <br>
      * Returns the the scroll context to be used to initiate the scroll.
      *
+     * @param <T>               : The type of document (matches the documentType)
      * @param index             : The index to scan
      * @param type              : The type to scan
      * @param searchRequest     : The search request to use for the scan
@@ -252,6 +253,7 @@ public class RubberbandClient {
     }
 
     /**
+     * @param <T>               : The type of document (matches the documentType)
      * @param index               : The index to scan
      * @param type                : The type to scan
      * @param searchRequest       : The search request to use for the scan
@@ -271,6 +273,13 @@ public class RubberbandClient {
 
     /**
      * Be sure to always pass in the context from the previous ScrollResult that was received.
+     *
+     * @param <T>     : The type of document being scrolled over.
+     * @param context : The ScrollContext returned from the previous batch of results.
+     * @return The next ScrollContext.
+     *
+     * @see #beginScanAndScroll(String, String, SearchRequest, int, String, Class)
+     * @see #beginScroll(String, String, SearchRequest, int, String, Class)
      */
     public <T> ScrollResult<T> continueScroll(ScrollContext<T> context) {
         String searchUrl = elasticSearchUrl + "/_search/scroll?scroll=" + context.getKeepAliveTime() + "&scroll_id=" + context.getScrollId();
