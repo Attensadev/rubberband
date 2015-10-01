@@ -106,6 +106,9 @@ public class RubberbandClient {
     }
 
     /**
+     * @param index The index to create the item in.
+     * @param type  The type of the document.
+     * @param item  the document to create.
      * @return The elasticsearch _id of the newly created document.
      */
     public String create(String index, String type, Object item) {
@@ -233,8 +236,12 @@ public class RubberbandClient {
      * <br>
      * Returns the the scroll context to be used to initiate the scroll.
      *
+     * @param index             : The index to scan
+     * @param type              : The type to scan
+     * @param searchRequest     : The search request to use for the scan
      * @param documentsPerShard : The number of documents to return, per shard, per request.
      * @param timeToKeepAlive   : How long to keep the scroll alive.  This should be something like "1m". See ES docs for options.
+     * @param documentType      : The type of the documents.
      * @return The ScrollContext to use for scrolling through the results.
      * @see #continueScroll(ScrollContext)
      */
@@ -245,8 +252,12 @@ public class RubberbandClient {
     }
 
     /**
+     * @param index               : The index to scan
+     * @param type                : The type to scan
+     * @param searchRequest       : The search request to use for the scan
      * @param documentsPerRequest : The number of documents to return, per request.
      * @param timeToKeepAlive     : How long to keep the scroll alive.  This should be something like "1m". See ES docs for options.
+     * @param documentType        : The type of the documents.
      * @return The initial page of results, with the context to use for the next page.
      * @see #continueScroll(ScrollContext)
      */
