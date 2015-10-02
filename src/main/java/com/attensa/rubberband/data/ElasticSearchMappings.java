@@ -54,6 +54,13 @@ public class ElasticSearchMappings {
 
         /**
          * Simple configuration of a non-nested property.
+         *
+         * @param type           - see ES docs
+         * @param format         - see ES docs
+         * @param include_in_all - see ES docs
+         * @param analyzer       - see ES docs
+         * @param index          - see ES docs
+         * @param fields         - Map of field name to config, for pieces of a compound type.
          */
         public Config(String type, String format, Boolean include_in_all, String analyzer, IndexOption index, Map<String, Config> fields) {
             this(type, format, include_in_all, analyzer, index, fields, null, null);
@@ -61,6 +68,9 @@ public class ElasticSearchMappings {
 
         /**
          * A sub-document type of configuration (non-nested).
+         *
+         * @param include_in_parent - see ES docs
+         * @param properties        - Mapping of property name to sub-Config.
          */
         public Config(Boolean include_in_parent, Map<String, Config> properties) {
             this(null, null, null, null, null, null, include_in_parent, properties);
@@ -68,6 +78,8 @@ public class ElasticSearchMappings {
 
         /**
          * A nested sub-document type of configuration.
+         *
+         * @param properties - Mapping of property name to sub-Config.
          */
         public Config(Map<String, Config> properties) {
             this("nested", null, null, null, null, null, true, properties);

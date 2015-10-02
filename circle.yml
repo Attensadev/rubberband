@@ -1,0 +1,14 @@
+machine:
+  java:
+    version: oraclejdk8
+
+
+dependencies:
+  post:
+    - wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.2.tar.gz
+    - tar -xvf elasticsearch-1.7.2.tar.gz
+    - elasticsearch-1.7.2/bin/elasticsearch: {background: true}
+
+test:
+  override:
+    - mvn clean package
