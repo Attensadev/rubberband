@@ -16,7 +16,7 @@ public class FunctionScoreQuery implements QueryType {
         function_score = new FunctionScore(query, functions, scoreMode, boostMode, minScore, maxBoost, boost);
     }
 
-    public static FunctionScoreQueryBuilder build() {
+    public static FunctionScoreQueryBuilder builder() {
         return new FunctionScoreQueryBuilder();
     }
 
@@ -136,7 +136,7 @@ public class FunctionScoreQuery implements QueryType {
             return this;
         }
 
-        public FunctionScoreQuery createFunctionScoreQuery() {
+        public FunctionScoreQuery build() {
             return new FunctionScoreQuery(query, functions, scoreMode, boostMode, minScore, maxBoost, boost);
         }
     }
