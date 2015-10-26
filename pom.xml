@@ -40,6 +40,13 @@
         <url>git@github.com:Attensadev/rubberband.git</url>
     </scm>
 
+    <repositories>
+        <repository>
+            <id>oss-snapshot</id>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </repository>
+    </repositories>
+
     <build>
         <plugins>
             <plugin>
@@ -110,7 +117,7 @@
         <dependency>
             <groupId>com.flightstats</groupId>
             <artifactId>fava</artifactId>
-            <version>0.1.11</version>
+            <version>0.1.12-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>com.github.rholder</groupId>

@@ -5,17 +5,30 @@ import lombok.Value;
 import java.util.List;
 import java.util.Map;
 
+import static java.util.Collections.min;
 import static java.util.Collections.singletonMap;
 
 @Value
 public class FunctionScoreQuery implements QueryType {
     FunctionScore function_score;
 
+    private FunctionScoreQuery(QueryType query, List<ScoreFunction> functions, String scoreMode, String boostMode, Float minScore, Float maxBoost, Float boost) {
+        function_score = new FunctionScore(query, functions, scoreMode, boostMode, minScore, maxBoost, boost);
+    }
+
+    public static FunctionScoreQueryBuilder builder() {
+        return new FunctionScoreQueryBuilder();
+    }
+
     @Value
     public static class FunctionScore {
         QueryType query;
         List<ScoreFunction> functions;
         String score_mode;
+        String boost_mode;
+        Float min_score;
+        Float max_boost;
+        Float boost;
     }
 
     public interface ScoreFunction {
@@ -76,4 +89,55 @@ public class FunctionScoreQuery implements QueryType {
         none, log, log1p, log2p, ln, ln1p, ln2p, square, sqrt, reciprocal;
     }
 
+    public static class FunctionScoreQueryBuilder {
+        private QueryType query;
+        private List<ScoreFunction> functions;
+        private String scoreMode;
+        private String boostMode;
+        private Float minScore;
+        private Float maxBoost;
+        private Float boost;
+
+        private FunctionScoreQueryBuilder() {
+        }
+
+        public FunctionScoreQueryBuilder query(QueryType query) {
+            this.query = query;
+            return this;
+        }
+
+        public FunctionScoreQueryBuilder functions(List<ScoreFunction> functions) {
+            this.functions = functions;
+            return this;
+        }
+
+        public FunctionScoreQueryBuilder scoreMode(String scoreMode) {
+            this.scoreMode = scoreMode;
+            return this;
+        }
+
+        public FunctionScoreQueryBuilder boostMode(String boostMode) {
+            this.boostMode = boostMode;
+            return this;
+        }
+
+        public FunctionScoreQueryBuilder minScore(Float minScore) {
+            this.minScore = minScore;
+            return this;
+        }
+
+        public FunctionScoreQueryBuilder maxBoost(Float maxBoost) {
+            this.maxBoost = maxBoost;
+            return this;
+        }
+
+        public FunctionScoreQueryBuilder boost(Float boost) {
+            this.boost = boost;
+            return this;
+        }
+
+        public FunctionScoreQuery build() {
+            return new FunctionScoreQuery(query, functions, scoreMode, boostMode, minScore, maxBoost, boost);
+        }
+    }
 }
