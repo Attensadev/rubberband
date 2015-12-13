@@ -1,9 +1,9 @@
 package com.attensa.rubberband.tests;
 
-import com.attensa.rubberband.RubberbandClient;
-import com.attensa.rubberband.data.DocumentUpdate;
 import com.attensa.rubberband.Cat;
+import com.attensa.rubberband.RubberbandClient;
 import com.attensa.rubberband.TestUtilities;
+import com.attensa.rubberband.data.DocumentUpdate;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -26,7 +26,8 @@ public class UpdateTest {
 
         client.update("animals", "cat", new DocumentUpdate(tigger.getId(), singletonMap("description", "Feral cat who got left behind.")));
 
-        Cat updated = client.get("animals", "cat", tigger.getId(), Cat.class).orElseThrow(() -> new RuntimeException("Failed to retrieve Tigger"));
+        Cat updated = client.<Cat>get("animals", "cat", tigger.getId(), Cat.class)
+                .orElseThrow(() -> new RuntimeException("Failed to retrieve Tigger"));
 
         assertEquals("Feral cat who got left behind.", updated.getDescription());
     }

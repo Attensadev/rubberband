@@ -1,15 +1,16 @@
 package com.attensa.rubberband.examples;
 
 import com.attensa.rubberband.Cat;
-import com.attensa.rubberband.data.ElasticSearchMappings;
-import com.flightstats.http.HttpTemplate;
-import com.flightstats.http.Response;
 import com.attensa.rubberband.RubberbandClient;
+import com.attensa.rubberband.data.ElasticSearchMappings;
 import com.attensa.rubberband.data.Page;
 import com.attensa.rubberband.data.PageRequest;
 import com.attensa.rubberband.data.SearchRequest;
 import com.attensa.rubberband.query.QueryStringQuery;
+import com.flightstats.http.HttpTemplate;
+import com.flightstats.http.Response;
 import com.flightstats.util.CollectionUtils.HashMapBuilder;
+import com.flightstats.util.UUIDGenerator;
 import com.github.rholder.retry.Attempt;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.StopStrategies;
@@ -17,9 +18,13 @@ import com.github.rholder.retry.WaitStrategies;
 import com.google.gson.Gson;
 import org.apache.http.impl.client.HttpClientBuilder;
 
-import java.util.*;
+import java.util.Collections;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
-import static com.attensa.rubberband.data.ElasticSearchMappings.*;
+import static com.attensa.rubberband.data.ElasticSearchMappings.Config;
+import static com.attensa.rubberband.data.ElasticSearchMappings.PropertyContainer;
 import static com.google.common.collect.Lists.newArrayList;
 import static org.jooq.lambda.Seq.seq;
 
@@ -28,7 +33,7 @@ public class IndexAndQuery {
     public static void main(String[] args) throws InterruptedException {
         Gson gson = new Gson();
         Retryer<Response> retryer = new Retryer<>(StopStrategies.stopAfterAttempt(2), WaitStrategies.exponentialWait(), Attempt::hasException);
-        HttpTemplate httpTemplate = new HttpTemplate(HttpClientBuilder.create().build(), gson, retryer);
+        HttpTemplate httpTemplate = new HttpTemplate(HttpClientBuilder.create().build(), gson, retryer, new UUIDGenerator());
         RubberbandClient client = new RubberbandClient(httpTemplate, gson, "http://localhost:9200");
 
         Cat winston = new Cat("1", "Winston", "male", "Turkish Van", "A very fluffy, friendly cat.");
