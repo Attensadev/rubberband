@@ -5,12 +5,14 @@ import lombok.Getter;
 import lombok.Value;
 import lombok.experimental.Wither;
 
+import java.lang.reflect.Type;
+
 @Value
 @Wither
 public class ScrollContext<T> {
     String scrollId;
     String keepAliveTime;
-    Class<T> documentType;
+    Type documentType;
     @Getter(AccessLevel.NONE)
     boolean hasMore;
     long total;

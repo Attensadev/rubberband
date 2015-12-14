@@ -17,6 +17,7 @@ import org.slf4j.LoggerFactory;
 import javax.inject.Inject;
 import javax.inject.Named;
 import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -30,7 +31,6 @@ import static com.google.common.base.Charsets.UTF_8;
 import static com.google.inject.util.Types.newParameterizedType;
 import static org.jooq.lambda.Seq.seq;
 
-//todo: currently, fava's HttpTemplate.get does not utilize the retryer. That needs to be fixed. Until then, gets here won't get automatically retried.
 public class RubberbandClient {
     private static final Logger logger = LoggerFactory.getLogger(RubberbandClient.class);
 
@@ -161,13 +161,22 @@ public class RubberbandClient {
     }
 
     public <T> Page<T> query(String index, SearchRequest searchRequest, PageRequest pageRequest, Class<T> documentType) {
-        return queryWithScores(index, searchRequest, pageRequest, documentType).map(ScoredItem::getItem);
+        return query(index, searchRequest, pageRequest, (Type) documentType);
     }
 
-    public <T> Page<ScoredItem<T>> queryWithScores(String index, SearchRequest searchRequest, PageRequest pageRequest, Class<T> documentType) {
+    public <T> Page<T> query(String index, SearchRequest searchRequest, PageRequest pageRequest, Type documentType) {
+        Page<ScoredItem<T>> scoredItems = queryWithScores(index, searchRequest, pageRequest, documentType);
+        return scoredItems.map(ScoredItem::getItem);
+    }
+
+    public <T> Page<ScoredItem<T>> queryWithScores(String index, SearchRequest searchRequest, PageRequest pageRequest, Class<T> type) {
+        return queryWithScores(index, searchRequest, pageRequest, (Type) type);
+    }
+
+    public <T> Page<ScoredItem<T>> queryWithScores(String index, SearchRequest searchRequest, PageRequest pageRequest, Type type) {
         logger.debug("Running search query on index: " + index + " : " + gson.toJson(searchRequest));
         String searchUrl = indexUrl(index) + "_search?from=" + (pageRequest.getPageNumber() * pageRequest.getSize()) + "&size=" + pageRequest.getSize();
-        SearchResponse<T> response = makeSearchRequest(searchUrl, searchRequest, documentType);
+        SearchResponse<T> response = makeSearchRequest(searchUrl, searchRequest, type);
         return new Page<>(makeScoredItems(response), pageRequest, response.getHits().getTotal());
     }
 
@@ -188,6 +197,10 @@ public class RubberbandClient {
     }
 
     public <T> Optional<T> get(String index, String type, String id, Class<T> documentType) {
+        return get(index, type, id, (Type) documentType);
+    }
+
+    public <T> Optional<T> get(String index, String type, String id, Type documentType) {
         GetResponse<T> getResponse;
         try {
             getResponse = httpTemplate.get(singleItemUri(index, type, id), newParameterizedType(GetResponse.class, documentType));
@@ -206,7 +219,7 @@ public class RubberbandClient {
                 .toList();
     }
 
-    private <T> SearchResponse<T> makeSearchRequest(String searchUrl, SearchRequest searchRequest, Class<T> documentType) {
+    private <T> SearchResponse<T> makeSearchRequest(String searchUrl, SearchRequest searchRequest, Type documentType) {
         ParameterizedType type = newParameterizedType(SearchResponse.class, documentType);
         AtomicReference<SearchResponse<T>> result = new AtomicReference<>();
         httpTemplate.postWithNoResponseCodeValidation(searchUrl, searchRequest, response -> {
@@ -242,14 +255,14 @@ public class RubberbandClient {
      * @param searchRequest     : The search request to use for the scan
      * @param documentsPerShard : The number of documents to return, per shard, per request.
      * @param timeToKeepAlive   : How long to keep the scroll alive.  This should be something like "1m". See ES docs for options.
-     * @param documentType      : The type of the documents.
+     * @param docType           : The type of document to be returned
      * @return The ScrollContext to use for scrolling through the results.
      * @see #continueScroll(ScrollContext)
      */
-    public <T> ScrollContext<T> beginScanAndScroll(String index, String type, SearchRequest searchRequest, int documentsPerShard, String timeToKeepAlive, Class<T> documentType) {
+    public <T> ScrollContext<T> beginScanAndScroll(String index, String type, SearchRequest searchRequest, int documentsPerShard, String timeToKeepAlive, Type docType) {
         String searchUrl = indexTypeUrl(index, type) + "_search/?search_type=scan&scroll=" + timeToKeepAlive;
-        SearchResponse<T> response = makeSearchRequest(searchUrl, searchRequest.withSize(documentsPerShard), documentType);
-        return new ScrollContext<>(response.get_scroll_id(), timeToKeepAlive, documentType, true, response.getTotal());
+        SearchResponse<T> response = makeSearchRequest(searchUrl, searchRequest.withSize(documentsPerShard), docType);
+        return new ScrollContext<>(response.get_scroll_id(), timeToKeepAlive, docType, true, response.getTotal());
     }
 
     /**
@@ -263,7 +276,7 @@ public class RubberbandClient {
      * @return The initial page of results, with the context to use for the next page.
      * @see #continueScroll(ScrollContext)
      */
-    public <T> ScrollResult<T> beginScroll(String index, String type, SearchRequest searchRequest, int documentsPerRequest, String timeToKeepAlive, Class<T> documentType) {
+    public <T> ScrollResult<T> beginScroll(String index, String type, SearchRequest searchRequest, int documentsPerRequest, String timeToKeepAlive, Type documentType) {
         String searchUrl = indexTypeUrl(index, type) + "_search/?scroll=" + timeToKeepAlive;
         SearchResponse<T> response = makeSearchRequest(searchUrl, searchRequest.withSize(documentsPerRequest), documentType);
         List<ScoredItem<T>> scoredResults = makeScoredItems(response);
@@ -278,8 +291,8 @@ public class RubberbandClient {
      * @param context : The ScrollContext returned from the previous batch of results.
      * @return The next ScrollContext.
      *
-     * @see #beginScanAndScroll(String, String, SearchRequest, int, String, Class)
-     * @see #beginScroll(String, String, SearchRequest, int, String, Class)
+     * @see #beginScanAndScroll(String, String, SearchRequest, int, String, Type)
+     * @see #beginScroll(String, String, SearchRequest, int, String, Type)
      */
     public <T> ScrollResult<T> continueScroll(ScrollContext<T> context) {
         String searchUrl = elasticSearchUrl + "/_search/scroll?scroll=" + context.getKeepAliveTime() + "&scroll_id=" + context.getScrollId();

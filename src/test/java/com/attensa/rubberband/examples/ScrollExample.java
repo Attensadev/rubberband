@@ -8,6 +8,7 @@ import com.attensa.rubberband.data.SearchRequest;
 import com.attensa.rubberband.query.MatchAllQuery;
 import com.flightstats.http.HttpTemplate;
 import com.flightstats.http.Response;
+import com.flightstats.util.UUIDGenerator;
 import com.github.rholder.retry.Attempt;
 import com.github.rholder.retry.Retryer;
 import com.github.rholder.retry.StopStrategies;
@@ -22,7 +23,7 @@ public class ScrollExample {
     public static void main(String[] args) {
         Gson gson = new Gson();
         Retryer<Response> retryer = new Retryer<>(StopStrategies.stopAfterAttempt(2), WaitStrategies.exponentialWait(), Attempt::hasException);
-        HttpTemplate httpTemplate = new HttpTemplate(HttpClientBuilder.create().build(), gson, retryer);
+        HttpTemplate httpTemplate = new HttpTemplate(HttpClientBuilder.create().build(), gson, retryer, new UUIDGenerator());
         RubberbandClient client = new RubberbandClient(httpTemplate, gson, "http://localhost:9200");
 
         long totalSeen = 0;
