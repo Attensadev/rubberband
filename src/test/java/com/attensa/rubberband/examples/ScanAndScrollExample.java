@@ -6,25 +6,15 @@ import com.attensa.rubberband.data.ScrollContext;
 import com.attensa.rubberband.data.ScrollResult;
 import com.attensa.rubberband.data.SearchRequest;
 import com.attensa.rubberband.query.MatchAllQuery;
-import com.flightstats.http.HttpTemplate;
-import com.flightstats.http.Response;
-import com.flightstats.util.UUIDGenerator;
-import com.github.rholder.retry.Attempt;
-import com.github.rholder.retry.Retryer;
-import com.github.rholder.retry.StopStrategies;
-import com.github.rholder.retry.WaitStrategies;
 import com.google.gson.Gson;
-import org.apache.http.impl.client.HttpClientBuilder;
+import okhttp3.OkHttpClient;
 
 import java.util.List;
 
 public class ScanAndScrollExample {
 
     public static void main(String[] args) {
-        Gson gson = new Gson();
-        Retryer<Response> retryer = new Retryer<>(StopStrategies.stopAfterAttempt(2), WaitStrategies.exponentialWait(), Attempt::hasException);
-        HttpTemplate httpTemplate = new HttpTemplate(HttpClientBuilder.create().build(), gson, retryer, new UUIDGenerator());
-        RubberbandClient client = new RubberbandClient(httpTemplate, gson, "http://localhost:9200");
+        RubberbandClient client = new RubberbandClient(new OkHttpClient(), new Gson(), "http://localhost:9200");
 
         long totalSeen = 0;
         ScrollContext<Cat> context = client.beginScanAndScroll("animals", "cat", new SearchRequest(new MatchAllQuery(), null, null), 50, "1m", Cat.class);

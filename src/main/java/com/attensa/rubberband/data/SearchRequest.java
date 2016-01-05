@@ -7,7 +7,7 @@ import lombok.experimental.Wither;
 import java.util.List;
 
 @Value
-@Builder
+@Builder(toBuilder = true)
 @Wither
 @AllArgsConstructor
 public class SearchRequest {
