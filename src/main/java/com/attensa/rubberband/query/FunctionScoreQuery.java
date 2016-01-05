@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 
 import static java.util.Collections.min;
+import static java.util.Collections.newSetFromMap;
 import static java.util.Collections.singletonMap;
 
 @Value
@@ -83,6 +84,20 @@ public class FunctionScoreQuery implements QueryType {
         String field;
         int factor;
         FieldValueFactorModifier modifier;
+    }
+
+    @Value
+    public static class RandomScoreFunction implements FunctionScoreQuery.ScoreFunction {
+        RandomScore random_score;
+
+        public RandomScoreFunction(String seed) {
+            this.random_score = new RandomScore(seed);
+        }
+    }
+
+    @Value
+    static class RandomScore {
+        String seed;
     }
 
     public enum FieldValueFactorModifier {
