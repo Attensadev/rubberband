@@ -7,13 +7,15 @@ import com.attensa.rubberband.data.Page;
 import com.attensa.rubberband.data.PageRequest;
 import com.attensa.rubberband.data.SearchRequest;
 import com.attensa.rubberband.query.FunctionScoreQuery;
+import com.attensa.rubberband.query.FunctionScoreQuery.RandomScoreFunction;
+import com.attensa.rubberband.query.TermQuery;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Collections;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.attensa.rubberband.TestUtilities.waitForResultsToShowUp;
 import static java.util.Collections.singletonList;
 import static org.junit.Assert.*;
 
@@ -44,8 +46,9 @@ public class QueryTest {
     public void testQueryRandom() throws Exception {
         Cat simon = new Cat(null, "Simon", "mail", "unknown", "Well loved and now deceased.");
         client.create("animals", "cat", simon);
+        waitForResultsToShowUp(client, SearchRequest.builder().query(new TermQuery("name", "Simon")).build());
 
-        FunctionScoreQuery functionScoreQuery = FunctionScoreQuery.builder().functions(singletonList(new FunctionScoreQuery.RandomScoreFunction(UUID.randomUUID().toString()))).build();
+        FunctionScoreQuery functionScoreQuery = FunctionScoreQuery.builder().functions(singletonList(new RandomScoreFunction(UUID.randomUUID().toString()))).build();
         SearchRequest searchRequest = SearchRequest.builder().query(functionScoreQuery).build();
         Page<Cat> cats = client.query("animals", searchRequest, new PageRequest(1, 0), Cat.class);
         assertNotNull(cats);
