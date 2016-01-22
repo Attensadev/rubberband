@@ -92,6 +92,8 @@ public class ElasticSearchMappings {
     @Value
     public static class Settings {
         Analysis analysis;
+        int number_of_shards;
+        int number_of_replicas;
     }
 
     @Value
