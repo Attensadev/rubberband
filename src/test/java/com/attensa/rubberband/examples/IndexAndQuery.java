@@ -78,7 +78,7 @@ public class IndexAndQuery {
                 .with("description", descriptionOptions)
                 .build();
         Map<String, PropertyContainer> typeMapping = Collections.singletonMap("cat", new PropertyContainer(properties));
-        return new ElasticSearchMappings(typeMapping, null);
+        return new ElasticSearchMappings(typeMapping, new ElasticSearchMappings.Settings(null, 3, 1));
     }
 
     private static void waitForResultsToShowUp(RubberbandClient client, SearchRequest searchRequest, int expected) throws InterruptedException {
