@@ -5,6 +5,7 @@ import lombok.*;
 import lombok.experimental.Wither;
 
 import java.util.List;
+import java.util.Map;
 
 @Value
 @Builder
@@ -18,12 +19,18 @@ public class SearchRequest {
     Integer min_score;
     Integer size;
 
+    /**
+     * Placeholder for aggregations, until a decent API can be figured out.
+     */
+    Map<String, Object> aggs;
+
     public SearchRequest(QueryType query, List<ElasticSearchSort> sort, List<String> source) {
         this.query = query;
         this.sort = sort;
         this._source = source;
         this.min_score = null;
         this.size = null;
+        this.aggs = null;
     }
 
     /**

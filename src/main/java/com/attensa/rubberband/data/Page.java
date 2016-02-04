@@ -4,6 +4,7 @@ import lombok.Value;
 import org.jooq.lambda.Seq;
 
 import java.util.List;
+import java.util.Map;
 import java.util.function.Function;
 
 import static org.jooq.lambda.Seq.seq;
@@ -14,7 +15,10 @@ public class Page<T> {
     PageRequest request;
     long total;
 
+    //here until a better api can be figured out.
+    Map<String, Object> aggregations;
+
     public <S> Page<S> map(Function<T, S> conversion) {
-        return new Page<>(seq(contents).map(conversion).toList(), request, total);
+        return new Page<>(seq(contents).map(conversion).toList(), request, total, aggregations);
     }
 }

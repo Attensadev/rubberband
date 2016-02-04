@@ -177,7 +177,7 @@ public class RubberbandClient {
         logger.debug("Running search query on index: " + index + " : " + gson.toJson(searchRequest));
         String searchUrl = indexUrl(index) + "_search?from=" + (pageRequest.getPageNumber() * pageRequest.getSize()) + "&size=" + pageRequest.getSize();
         SearchResponse<T> response = makeSearchRequest(searchUrl, searchRequest, type);
-        return new Page<>(makeScoredItems(response), pageRequest, response.getHits().getTotal());
+        return new Page<>(makeScoredItems(response), pageRequest, response.getHits().getTotal(), response.getAggregations());
     }
 
     public void delete(String index, String type, String id) {
