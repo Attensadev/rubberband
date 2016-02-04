@@ -50,6 +50,6 @@ public class AggregationTest {
         Page<Cat> results = client.query("animals", searchRequest, new PageRequest(10, 0), Cat.class);
         Map<String, Object> aggregations = results.getAggregations();
         assertEquals(expected, ((Map) aggregations.get("genders")).get("buckets"));
-    }sup
+    }
 
 }
