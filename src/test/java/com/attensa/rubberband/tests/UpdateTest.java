@@ -26,7 +26,7 @@ public class UpdateTest {
 
         client.update("animals", "cat", new DocumentUpdate(tigger.getId(), singletonMap("description", "Feral cat who got left behind.")));
 
-        Cat updated = client.<Cat>get("animals", "cat", tigger.getId(), Cat.class)
+        Cat updated = client.get("animals", "cat", tigger.getId(), Cat.class)
                 .orElseThrow(() -> new RuntimeException("Failed to retrieve Tigger"));
 
         assertEquals("Feral cat who got left behind.", updated.getDescription());

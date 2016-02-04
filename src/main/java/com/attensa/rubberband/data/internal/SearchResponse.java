@@ -4,12 +4,14 @@ import lombok.Getter;
 import lombok.Value;
 
 import java.util.List;
+import java.util.Map;
 
 @Getter
 @Value
 public class SearchResponse<T> {
     String _scroll_id;
     Hits<T> hits;
+    Map<String, Object> aggregations;
 
     public long getTotal() {
         return hits.getTotal();
