@@ -7,6 +7,7 @@ import com.attensa.rubberband.data.Page;
 import com.attensa.rubberband.data.PageRequest;
 import com.attensa.rubberband.data.SearchRequest;
 import com.attensa.rubberband.query.QueryStringQuery;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
 import okhttp3.OkHttpClient;
 
@@ -63,10 +64,8 @@ public class IndexAndQuery {
 
     private static ElasticSearchMappings createCatMappings() {
         Config descriptionOptions = new Config("string", null, true, "english", null, null);
-        Map<String, Config> properties = new HashMapBuilder<String, Config>()
-                .with("description", descriptionOptions)
-                .build();
-        Map<String, PropertyContainer> typeMapping = Collections.singletonMap("cat", new PropertyContainer(properties));
+        Map<String, Config> properties = ImmutableMap.of("description", descriptionOptions);
+        Map<String, PropertyContainer> typeMapping = singletonMap("cat", new PropertyContainer(properties));
         return new ElasticSearchMappings(typeMapping, new ElasticSearchMappings.Settings(null, 3, 1));
     }
 
