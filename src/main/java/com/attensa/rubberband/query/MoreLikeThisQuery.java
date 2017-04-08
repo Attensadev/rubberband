@@ -8,22 +8,16 @@ import java.util.List;
 public class MoreLikeThisQuery implements QueryType {
     MoreLikeThis more_like_this;
 
-    public MoreLikeThisQuery(String[] fields, List<Document> documents, String likeText, int minimumTermFrequency) {
-        this.more_like_this = new MoreLikeThis(fields, documents, likeText, minimumTermFrequency);
+    public MoreLikeThisQuery(String[] fields, List<String> ids, String likeText, int minimumTermFrequency) {
+        this.more_like_this = new MoreLikeThis(fields, ids, likeText, minimumTermFrequency);
     }
 
     @Value
     public static class MoreLikeThis {
         String[] fields;
-        List<Document> docs;
+        List<String> ids;
         String like_text;
         int min_term_freq;
     }
 
-    @Value
-    public static class Document {
-        String _index;
-        String _type;
-        String _id;
-    }
 }
