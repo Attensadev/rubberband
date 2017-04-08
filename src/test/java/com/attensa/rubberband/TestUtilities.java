@@ -9,7 +9,9 @@ import com.github.rholder.retry.StopStrategies;
 import com.github.rholder.retry.WaitStrategies;
 import com.google.gson.Gson;
 import org.apache.http.impl.client.HttpClientBuilder;
+import org.junit.Ignore;
 
+@Ignore
 public class TestUtilities {
 
     public static RubberbandClient buildClient() {
