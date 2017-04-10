@@ -16,6 +16,7 @@ public class UpdateTest {
     @Before
     public void setUp() throws Exception {
         client = TestUtilities.buildClient();
+        client.deleteIndex("animals");
     }
 
     @Test

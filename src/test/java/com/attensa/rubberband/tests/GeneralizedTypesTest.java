@@ -21,6 +21,7 @@ public class GeneralizedTypesTest {
     @Before
     public void setup() {
         client = TestUtilities.buildClient();
+        client.deleteIndex("animals");
     }
 
     @Test

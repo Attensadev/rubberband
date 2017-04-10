@@ -1,14 +1,15 @@
 package com.attensa.rubberband.tests;
 
-import com.attensa.rubberband.RubberbandClient;
 import com.attensa.rubberband.Cat;
+import com.attensa.rubberband.RubberbandClient;
 import com.attensa.rubberband.TestUtilities;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.util.Optional;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class CreateTest {
 
@@ -17,6 +18,7 @@ public class CreateTest {
     @Before
     public void setup() {
         client = TestUtilities.buildClient();
+        client.deleteIndex("animals");
     }
 
     @Test
