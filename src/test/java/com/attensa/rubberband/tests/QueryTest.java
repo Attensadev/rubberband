@@ -1,7 +1,7 @@
 package com.attensa.rubberband.tests;
 
-import com.attensa.rubberband.RubberbandClient;
 import com.attensa.rubberband.Cat;
+import com.attensa.rubberband.RubberbandClient;
 import com.attensa.rubberband.TestUtilities;
 import com.attensa.rubberband.data.Page;
 import com.attensa.rubberband.data.PageRequest;
@@ -12,7 +12,6 @@ import com.attensa.rubberband.query.TermQuery;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.util.Optional;
 import java.util.UUID;
 
 import static com.attensa.rubberband.TestUtilities.waitForResultsToShowUp;
@@ -26,27 +25,17 @@ public class QueryTest {
     @Before
     public void setup() {
         client = TestUtilities.buildClient();
-    }
-
-    @Test
-    public void testCreateAndGet() throws Exception {
-        Cat simon = new Cat(null, "Simon", "mail", "unknown", "Well loved and now deceased.");
-        String id = client.create("animals", "cat", simon);
-        simon = simon.withId(id);
-
-        Cat modified = simon.withBreed("Maine Coon");
-        client.save("animals", "cat", modified.getId(), modified);
-
-        Optional<Cat> retrieved = client.get("animals", "cat", id, Cat.class);
-        assertTrue(retrieved.isPresent());
-        assertEquals("Maine Coon", retrieved.get().getBreed());
+        client.deleteIndex("animals");
     }
 
     @Test
     public void testQueryRandom() throws Exception {
         Cat simon = new Cat(null, "Simon", "mail", "unknown", "Well loved and now deceased.");
-        client.create("animals", "cat", simon);
-        waitForResultsToShowUp(client, SearchRequest.builder().query(new TermQuery("name", "Simon")).build());
+        for (int i = 0; i < 10; i++) {
+            client.create("animals", "cat", simon);
+        }
+        long results = waitForResultsToShowUp(client, SearchRequest.builder().query(new TermQuery("name", "simon")).build());
+        assertTrue("found results: " + results, results > 0);
 
         FunctionScoreQuery functionScoreQuery = FunctionScoreQuery.builder().functions(singletonList(new RandomScoreFunction(UUID.randomUUID().toString()))).build();
         SearchRequest searchRequest = SearchRequest.builder().query(functionScoreQuery).build();
