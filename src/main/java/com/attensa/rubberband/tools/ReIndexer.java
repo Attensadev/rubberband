@@ -7,7 +7,6 @@ import com.attensa.rubberband.data.SearchRequest;
 import com.attensa.rubberband.query.MatchAllQuery;
 import org.jooq.lambda.Seq;
 
-import javax.inject.Inject;
 import java.util.List;
 import java.util.Map;
 
@@ -16,7 +15,6 @@ public class ReIndexer {
     private final RubberbandClient sourceClient;
     private final RubberbandClient targetClient;
 
-    @Inject
     public ReIndexer(RubberbandClient sourceClient, RubberbandClient targetClient) {
         this.sourceClient = sourceClient;
         this.targetClient = targetClient;

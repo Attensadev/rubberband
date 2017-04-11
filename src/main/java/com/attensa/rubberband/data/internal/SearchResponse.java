@@ -1,12 +1,10 @@
 package com.attensa.rubberband.data.internal;
 
-import lombok.Getter;
 import lombok.Value;
 
 import java.util.List;
 import java.util.Map;
 
-@Getter
 @Value
 public class SearchResponse<T> {
     String _scroll_id;

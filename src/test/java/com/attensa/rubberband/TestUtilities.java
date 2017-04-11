@@ -1,23 +1,28 @@
 package com.attensa.rubberband;
 
-import com.flightstats.http.HttpTemplate;
-import com.flightstats.http.Response;
-import com.flightstats.util.UUIDGenerator;
-import com.github.rholder.retry.Attempt;
-import com.github.rholder.retry.Retryer;
-import com.github.rholder.retry.StopStrategies;
-import com.github.rholder.retry.WaitStrategies;
+import com.attensa.rubberband.data.SearchRequest;
 import com.google.gson.Gson;
-import org.apache.http.impl.client.HttpClientBuilder;
+import okhttp3.OkHttpClient;
 import org.junit.Ignore;
 
 @Ignore
 public class TestUtilities {
 
     public static RubberbandClient buildClient() {
-        Gson gson = new Gson();
-        Retryer<Response> retryer = new Retryer<>(StopStrategies.stopAfterAttempt(2), WaitStrategies.exponentialWait(), Attempt::hasException);
-        HttpTemplate httpTemplate = new HttpTemplate(HttpClientBuilder.create().build(), gson, retryer, new UUIDGenerator());
-        return new RubberbandClient(httpTemplate, gson, "http://localhost:9200");
+        return new RubberbandClient(new OkHttpClient(), new Gson(), "http://localhost:9200");
     }
+
+    public static long waitForResultsToShowUp(RubberbandClient client, SearchRequest searchRequest) throws InterruptedException {
+        long count;
+        int tries = 0;
+        do {
+            count = client.count("animals", searchRequest);
+            Thread.sleep(200);
+        } while (count == 0L && tries++ < 100);
+        if (count == 0) {
+            throw new IllegalStateException("nothing ever showed up");
+        }
+        return count;
+    }
+
 }

@@ -5,58 +5,93 @@ import com.attensa.rubberband.data.internal.CountResponse;
 import com.attensa.rubberband.data.internal.CreateResponse;
 import com.attensa.rubberband.data.internal.GetResponse;
 import com.attensa.rubberband.data.internal.SearchResponse;
-import com.flightstats.http.HttpException;
-import com.flightstats.http.HttpTemplate;
-import com.flightstats.http.Response;
 import com.google.gson.Gson;
 import lombok.SneakyThrows;
-import org.apache.http.HttpStatus;
+import okhttp3.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import javax.inject.Inject;
-import javax.inject.Named;
-import java.lang.reflect.ParameterizedType;
+import java.io.IOException;
 import java.lang.reflect.Type;
-import java.net.URI;
-import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Optional;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
 
-import static com.google.common.base.Charsets.UTF_8;
-import static com.google.inject.util.Types.newParameterizedType;
+import static java.nio.charset.StandardCharsets.UTF_8;
+import static java.util.Collections.singletonList;
+import static org.apache.commons.lang3.reflect.TypeUtils.parameterize;
 import static org.jooq.lambda.Seq.seq;
 
 public class RubberbandClient {
     private static final Logger logger = LoggerFactory.getLogger(RubberbandClient.class);
+    public static final MediaType APPLICATION_JSON = MediaType.parse("application/json");
+    public static final MediaType TEXT_PLAIN = MediaType.parse("text/plain");
 
-    private final HttpTemplate httpTemplate;
+    private final OkHttpClient httpClient;
     private final Gson gson;
     private final String elasticSearchUrl;
 
-    @Inject
-    public RubberbandClient(HttpTemplate httpTemplate, Gson gson, @Named("elasticSearchUrl") String elasticSearchUrl) {
-        this.httpTemplate = httpTemplate;
+    public RubberbandClient(OkHttpClient httpClient, Gson gson, String elasticSearchUrl) {
+        this.httpClient = httpClient;
         this.gson = gson;
         this.elasticSearchUrl = elasticSearchUrl;
     }
 
-    public void createIndex(String index, ElasticSearchMappings mappings) {
-        httpTemplate.post(indexUrl(index), mappings);
+    private Request getRequest(String url) {
+        return new Request.Builder().url(url).build();
     }
 
-    public void deleteIndex(String index) {
-        Response response = httpTemplate.delete(URI.create(indexUrl(index)));
-        if (response.getCode() == HttpStatus.SC_NOT_FOUND) {
-            logger.info("No index with name \"" + index + "\" found to delete");
-            return;
+    private Request jsonPutRequest(String url, Object data) {
+        return new Request.Builder().url(url).put(RequestBody.create(APPLICATION_JSON, gson.toJson(data))).build();
+    }
+
+    private Request jsonPostRequest(String url, Object data) {
+        return new Request.Builder().url(url).post(RequestBody.create(APPLICATION_JSON, gson.toJson(data))).build();
+    }
+
+    private void delete(String uri) throws IOException {
+        httpClient.newCall(deleteRequest(uri)).execute().body().close();
+    }
+
+    private Request deleteRequest(String url) {
+        return new Request.Builder().delete().url(url).build();
+    }
+
+    @SneakyThrows
+    private void postJson(Object data, String url) {
+        post(url, RequestBody.create(APPLICATION_JSON, gson.toJson(data)));
+    }
+
+    @SneakyThrows
+    private void post(String url, RequestBody body) {
+        Request request = new Request.Builder()
+                .post(body)
+                .url(url)
+                .build();
+        Response response = httpClient.newCall(request).execute();
+        try (ResponseBody responseBody = response.body()) {
+            if (!response.isSuccessful()) {
+                throw new RubberbandException(response.code(), responseBody.string());
+            }
         }
-        if (response.getCode() != HttpStatus.SC_OK) {
-            throw new HttpException(new HttpException.Details(response.getCode(), response.getBodyString(UTF_8)));
+    }
+
+    public void createIndex(String index, Object mappings) {
+        postJson(mappings, indexUrl(index));
+    }
+
+    @SneakyThrows
+    public void deleteIndex(String index) {
+        Response response = httpClient.newCall(deleteRequest(indexUrl(index))).execute();
+        try (ResponseBody responseBody = response.body()) {
+            if (response.code() == 404) {
+                logger.info("No index with name \"" + index + "\" found to delete");
+                return;
+            }
+            if (response.code() != 200) {
+                throw new RubberbandException(response.code(), responseBody.string());
+            }
         }
     }
 
@@ -70,7 +105,7 @@ public class RubberbandClient {
         }
 
         String content = requestBody.toString();
-        httpTemplate.post(URI.create(elasticSearchUrl + "/_bulk"), content.getBytes(UTF_8), "text/plain");
+        post(elasticSearchUrl + "/_bulk", RequestBody.create(TEXT_PLAIN, content.getBytes(UTF_8)));
     }
 
     public void create(String index, String type, List<Object> documents) {
@@ -83,7 +118,7 @@ public class RubberbandClient {
         }
 
         String content = requestBody.toString();
-        httpTemplate.post(URI.create(elasticSearchUrl + "/_bulk"), content.getBytes(UTF_8), "text/plain");
+        post(elasticSearchUrl + "/_bulk", RequestBody.create(TEXT_PLAIN, content.getBytes(UTF_8)));
     }
 
     public void update(String index, String type, List<DocumentUpdate> updates) {
@@ -96,13 +131,16 @@ public class RubberbandClient {
         }
 
         String content = requestBody.toString();
-        Response response = httpTemplate.post(URI.create(elasticSearchUrl + "/_bulk"), content.getBytes(UTF_8), "text/plain");
-        checkResponseAggressive(response);
+        post(elasticSearchUrl + "/_bulk", RequestBody.create(TEXT_PLAIN, content.getBytes(UTF_8)));
     }
 
+    @SneakyThrows
     public void save(String index, String type, String id, Object item) {
-        Response response = httpTemplate.put(singleItemUri(index, type, id), gson.toJson(item).getBytes(UTF_8), "application/json");
-        checkResponseAggressive(response);
+        Request put = jsonPutRequest(singleItemUri(index, type, id), item);
+        Response response = httpClient.newCall(put).execute();
+        try (ResponseBody ignored = response.body()) {
+            checkResponseAggressive(response);
+        }
     }
 
     /**
@@ -111,53 +149,58 @@ public class RubberbandClient {
      * @param item  the document to create.
      * @return The elasticsearch _id of the newly created document.
      */
+    @SneakyThrows
     public String create(String index, String type, Object item) {
-        Response response = httpTemplate.post(URI.create(indexTypeUrl(index, type)), gson.toJson(item).getBytes(UTF_8), "application/json");
-        checkResponseAggressive(response);
-        CreateResponse createResponse = gson.fromJson(response.getBodyString(), CreateResponse.class);
-        return createResponse.get_id();
-    }
-
-    public void update(String index, String type, DocumentUpdate update) {
-        update(index, type, Collections.singletonList(update));
+        Request post = jsonPostRequest(indexTypeUrl(index, type), item);
+        Response response = httpClient.newCall(post).execute();
+        try (ResponseBody responseBody = response.body()) {
+            checkResponseAggressive(response);
+            CreateResponse createResponse = gson.fromJson(responseBody.string(), CreateResponse.class);
+            return createResponse.get_id();
+        }
     }
 
     @SneakyThrows
-    private String formatOne(Map.Entry<String, Object> entry) {
+    private void checkResponseAggressive(Response response) {
+        if (200 > response.code() || response.code() > 204) {
+            throw new RubberbandException(response.code(), response.body().string());
+        }
+    }
+
+    public void update(String index, String type, DocumentUpdate update) {
+        update(index, type, singletonList(update));
+    }
+
+    @SneakyThrows
+    private String formatOne(Map.Entry<String, java.lang.Object> entry) {
         return String.format("%s:%s", entry.getKey(), gson.toJson(entry.getValue()));
     }
 
-    private void checkResponseAggressive(Response response) {
-        if (HttpStatus.SC_OK > response.getCode() || response.getCode() > HttpStatus.SC_NO_CONTENT) {
-            throw new HttpException(new HttpException.Details(response.getCode(), response.getBodyString(UTF_8)));
-        }
-    }
-
+    @SneakyThrows
     public long count(String index, SearchRequest searchRequest) {
         logger.debug("Running count query on index: " + index + " : " + gson.toJson(searchRequest));
         String searchUrl = indexUrl(index) + "_count";
-        AtomicLong result = new AtomicLong(-1L);
-        httpTemplate.postWithNoResponseCodeValidation(searchUrl, searchRequest, response -> {
+
+        Request request = jsonPostRequest(searchUrl, searchRequest);
+        Response response = httpClient.newCall(request).execute();
+        try (ResponseBody responseBody = response.body()) {
             int status = checkResponse(response);
-            if (status == HttpStatus.SC_BAD_REQUEST) {
-                return;
+            if (status == 400) {
+                throw new RuntimeException("Count request failed. Details should be in the logs.");
             }
-            CountResponse countResponse = gson.fromJson(response.getBodyString(UTF_8), CountResponse.class);
-            result.set(countResponse.getCount());
-        });
-        if (result.get() == -1L) {
-            throw new RuntimeException("Count request failed. Details should be in the logs.");
+            CountResponse countResponse = gson.fromJson(responseBody.string(), CountResponse.class);
+            return countResponse.getCount();
         }
-        return result.get();
     }
 
+    @SneakyThrows
     private int checkResponse(Response response) {
-        if (HttpStatus.SC_BAD_REQUEST == response.getCode()) {
-            logger.warn("400 Bad Request: " + response.getBodyString());
-            return response.getCode();
+        if (400 == response.code()) {
+            logger.warn("400 Bad Request: " + response.body().string());
+            return response.code();
         }
         checkResponseAggressive(response);
-        return response.getCode();
+        return response.code();
     }
 
     public <T> Page<T> query(String index, SearchRequest searchRequest, PageRequest pageRequest, Class<T> documentType) {
@@ -180,37 +223,39 @@ public class RubberbandClient {
         return new Page<>(makeScoredItems(response), pageRequest, response.getHits().getTotal(), response.getAggregations());
     }
 
+    @SneakyThrows
     public void delete(String index, String type, String id) {
-        httpTemplate.delete(singleItemUri(index, type, id));
+        delete(singleItemUri(index, type, id));
     }
 
+    @SneakyThrows
     public void deleteByFieldValue(String index, String type, String fieldName, String value) {
-        httpTemplate.delete(URI.create(String.format("%s?q=%s:%s", itemQueryUrl(index, type), fieldName, value)));
+        delete(String.format("%s?q=%s:%s", itemQueryUrl(index, type), fieldName, value));
     }
 
     private String itemQueryUrl(String index, String type) {
         return indexTypeUrl(index, type) + "_query";
     }
 
-    private URI singleItemUri(String index, String type, String id) {
-        return URI.create(indexTypeUrl(index, type) + id);
+    private String singleItemUri(String index, String type, String id) {
+        return indexTypeUrl(index, type) + id;
     }
 
     public <T> Optional<T> get(String index, String type, String id, Class<T> documentType) {
         return get(index, type, id, (Type) documentType);
     }
 
+    @SneakyThrows
     public <T> Optional<T> get(String index, String type, String id, Type documentType) {
-        GetResponse<T> getResponse;
-        try {
-            getResponse = httpTemplate.get(singleItemUri(index, type, id), newParameterizedType(GetResponse.class, documentType));
-        } catch (HttpException e) {
-            if (e.getStatusCode() == HttpStatus.SC_NOT_FOUND) {
+        Request getRequest = getRequest(singleItemUri(index, type, id));
+        Response response = httpClient.newCall(getRequest).execute();
+        try (ResponseBody responseBody = response.body()) {
+            if (response.code() == 404) {
                 return Optional.empty();
             }
-            throw e;
+            GetResponse<T> getResponse = gson.fromJson(responseBody.string(), parameterize(GetResponse.class, documentType));
+            return Optional.ofNullable(getResponse.get_source());
         }
-        return Optional.ofNullable(getResponse.get_source());
     }
 
     private <T> List<ScoredItem<T>> makeScoredItems(SearchResponse<T> response) {
@@ -219,21 +264,17 @@ public class RubberbandClient {
                 .toList();
     }
 
+    @SneakyThrows
     private <T> SearchResponse<T> makeSearchRequest(String searchUrl, SearchRequest searchRequest, Type documentType) {
-        ParameterizedType type = newParameterizedType(SearchResponse.class, documentType);
-        AtomicReference<SearchResponse<T>> result = new AtomicReference<>();
-        httpTemplate.postWithNoResponseCodeValidation(searchUrl, searchRequest, response -> {
+        Request request = jsonPostRequest(searchUrl, searchRequest);
+        Response response = httpClient.newCall(request).execute();
+        try (ResponseBody responseBody = response.body()) {
             int status = checkResponse(response);
-            if (status == HttpStatus.SC_BAD_REQUEST) {
-                return;
+            if (status == 400) {
+                throw new RuntimeException("Search request failed. Details should be in the logs.");
             }
-            SearchResponse<T> searchResponse = gson.fromJson(response.getBodyString(UTF_8), type);
-            result.set(searchResponse);
-        });
-        if (result.get() == null) {
-            throw new RuntimeException("Search request failed. Details should be in the logs.");
+            return gson.fromJson(responseBody.string(), parameterize(SearchResponse.class, documentType));
         }
-        return result.get();
     }
 
     private String indexTypeUrl(String index, String type) {
@@ -266,7 +307,7 @@ public class RubberbandClient {
     }
 
     /**
-     * @param <T>               : The type of document (matches the documentType)
+     * @param <T>                 : The type of document (matches the documentType)
      * @param index               : The index to scan
      * @param type                : The type to scan
      * @param searchRequest       : The search request to use for the scan
@@ -290,7 +331,6 @@ public class RubberbandClient {
      * @param <T>     : The type of document being scrolled over.
      * @param context : The ScrollContext returned from the previous batch of results.
      * @return The next ScrollContext.
-     *
      * @see #beginScanAndScroll(String, String, SearchRequest, int, String, Type)
      * @see #beginScroll(String, String, SearchRequest, int, String, Type)
      */

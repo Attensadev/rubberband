@@ -7,40 +7,30 @@ import com.attensa.rubberband.data.Page;
 import com.attensa.rubberband.data.PageRequest;
 import com.attensa.rubberband.data.SearchRequest;
 import com.attensa.rubberband.query.QueryStringQuery;
-import com.flightstats.http.HttpTemplate;
-import com.flightstats.http.Response;
-import com.flightstats.util.CollectionUtils.HashMapBuilder;
-import com.flightstats.util.UUIDGenerator;
-import com.github.rholder.retry.Attempt;
-import com.github.rholder.retry.Retryer;
-import com.github.rholder.retry.StopStrategies;
-import com.github.rholder.retry.WaitStrategies;
+import com.google.common.collect.ImmutableMap;
 import com.google.gson.Gson;
-import org.apache.http.impl.client.HttpClientBuilder;
+import okhttp3.OkHttpClient;
 
-import java.util.Collections;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
 import static com.attensa.rubberband.data.ElasticSearchMappings.Config;
 import static com.attensa.rubberband.data.ElasticSearchMappings.PropertyContainer;
-import static com.google.common.collect.Lists.newArrayList;
+import static java.util.Collections.singletonMap;
 import static org.jooq.lambda.Seq.seq;
 
 //TODO: it would be great to turn this into an automated integration test.
 public class IndexAndQuery {
     public static void main(String[] args) throws InterruptedException {
-        Gson gson = new Gson();
-        Retryer<Response> retryer = new Retryer<>(StopStrategies.stopAfterAttempt(2), WaitStrategies.exponentialWait(), Attempt::hasException);
-        HttpTemplate httpTemplate = new HttpTemplate(HttpClientBuilder.create().build(), gson, retryer, new UUIDGenerator());
-        RubberbandClient client = new RubberbandClient(httpTemplate, gson, "http://localhost:9200");
+        RubberbandClient client = new RubberbandClient(new OkHttpClient(), new Gson(), "http://localhost:9200");
 
         Cat winston = new Cat("1", "Winston", "male", "Turkish Van", "A very fluffy, friendly cat.");
         Cat templeton = new Cat("2", "Templeton", "male", "American Shorthair", "The old man of the family. Black, and always hungry.");
         Cat zipper = new Cat("3", "Zipper", "female", "Longhair", "Skittish mama of Brownie.");
         Cat brownie = new Cat("4", "Brownie", "female", "Longhair", "Zipper's daughter. The least friendly of the crew. Hates the boys and yowls at them often.");
-        List<Cat> cats = newArrayList(templeton, zipper, brownie);
+        List<Cat> cats = Arrays.asList(templeton, zipper, brownie);
 
         client.deleteIndex("animals");
 
@@ -74,10 +64,8 @@ public class IndexAndQuery {
 
     private static ElasticSearchMappings createCatMappings() {
         Config descriptionOptions = new Config("string", null, true, "english", null, null);
-        Map<String, Config> properties = new HashMapBuilder<String, Config>()
-                .with("description", descriptionOptions)
-                .build();
-        Map<String, PropertyContainer> typeMapping = Collections.singletonMap("cat", new PropertyContainer(properties));
+        Map<String, Config> properties = ImmutableMap.of("description", descriptionOptions);
+        Map<String, PropertyContainer> typeMapping = singletonMap("cat", new PropertyContainer(properties));
         return new ElasticSearchMappings(typeMapping, new ElasticSearchMappings.Settings(null, 3, 1));
     }
 
