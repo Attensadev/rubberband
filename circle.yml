@@ -5,9 +5,9 @@ machine:
 
 dependencies:
   post:
-    - wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.2.tar.gz
-    - tar -xvf elasticsearch-1.7.2.tar.gz
-    - elasticsearch-1.7.2/bin/elasticsearch: {background: true}
+    - wget https://download.elastic.co/elasticsearch/elasticsearch/elasticsearch-1.7.6.tar.gz
+    - tar -xvf elasticsearch-1.7.6.tar.gz
+    - elasticsearch-1.7.6/bin/elasticsearch: {background: true}
 
 test:
   override:

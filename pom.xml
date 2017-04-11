@@ -6,7 +6,7 @@
 
     <groupId>com.attensa</groupId>
     <artifactId>rubberband</artifactId>
-    <version>0.3.0b-SNAPSHOT</version>
+    <version>0.4.0b-SNAPSHOT</version>
 
     <name>Attensa Rubberband</name>
     <description>Attensa's Java ElasticSearch REST API client</description>
